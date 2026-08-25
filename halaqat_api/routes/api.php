@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\Registrations\CreateRegistrationRequestControlle
 use App\Http\Controllers\Api\V1\Registrations\GetRegistrationRequestController;
 use App\Http\Controllers\Api\V1\Registrations\ListRegistrationRequestsController;
 use App\Http\Controllers\Api\V1\Registrations\RegistrationDecisionController;
+use App\Http\Controllers\Api\V1\Sessions\CreateSessionController;
 use App\Models\HalaqaMembership;
 use App\Models\RegistrationRequest;
 use App\Models\User;
@@ -72,5 +73,6 @@ Route::prefix('v1')->group(function (): void {
         Route::get('quran/surahs', [QuranController::class, 'surahs']);
         Route::get('quran/pages/{pageNumber}', [QuranController::class, 'page'])->whereNumber('pageNumber');
         Route::get('quran/ayahs/{ayahId}', [QuranController::class, 'ayah'])->whereNumber('ayahId');
+        Route::post('sessions', CreateSessionController::class);
     });
 });
