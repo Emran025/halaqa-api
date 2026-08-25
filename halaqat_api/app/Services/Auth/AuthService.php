@@ -39,6 +39,8 @@ class AuthService
                 'memorization_level' => $data['memorization_level'] ?? ($previous['memorization_level'] ?? null),
                 'review_level' => $data['review_level'] ?? ($previous['review_level'] ?? null),
                 'memorized_juz_count' => $previous['memorized_juz_count'] ?? null,
+                'memorized_surah_ids' => $previous['memorized_surah_ids'] ?? null,
+                'last_completed_unit' => $previous['last_completed_unit'] ?? null,
                 'previous_memorization_notes' => $previous['previous_teacher_notes'] ?? null,
                 'stop_reasons' => $previous['stop_reasons'] ?? null,
                 'bio' => $data['profile_bio'] ?? null,
@@ -262,6 +264,8 @@ class AuthService
             'memorization_level' => $student->studentProfile->memorization_level,
             'review_level' => $student->studentProfile->review_level,
             'memorized_juz_count' => $previous['memorized_juz_count'] ?? null,
+            'memorized_surah_ids' => $previous['memorized_surah_ids'] ?? null,
+            'last_completed_unit' => $previous['last_completed_unit'] ?? null,
             'previous_memorization_notes' => $previous['previous_teacher_notes'] ?? null,
             'profile_bio' => $data['profile_bio'] ?? null,
         ]);

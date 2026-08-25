@@ -26,6 +26,12 @@ class AuthRegistrationTest extends TestCase
         $userId = $response->json('user.id');
         $this->assertDatabaseHas('users', ['id' => $userId, 'role' => 'student', 'email' => $payload['email']]);
         $this->assertDatabaseHas('student_profiles', ['user_id' => $userId, 'memorized_juz_count' => 4.5]);
+        $studentProfile = DB::table('student_profiles')->where('user_id', $userId)->first();
+        $this->assertSame([1, 2], json_decode($studentProfile->memorized_surah_ids, true));
+        $this->assertSame('page', json_decode($studentProfile->last_completed_unit, true)['unit']);
+        $registrationProfile = DB::table('registration_request_profiles')->first();
+        $this->assertSame([1, 2], json_decode($registrationProfile->memorized_surah_ids, true));
+        $this->assertSame('page', json_decode($registrationProfile->last_completed_unit, true)['unit']);
         $this->assertDatabaseHas('registration_requests', ['student_id' => $userId, 'routing_mode' => 'all_available_teachers', 'state' => 'pending']);
         $this->assertDatabaseCount('registration_request_profiles', 1);
         $this->assertDatabaseHas('student_availability_profiles', ['student_id' => $userId, 'timezone' => 'Asia/Riyadh']);
@@ -139,6 +145,7 @@ class AuthRegistrationTest extends TestCase
                 'previous_teacher_notes' => 'Good foundation',
                 'stop_reasons' => 'Schedule conflict',
                 'memorized_surah_ids' => [1, 2],
+                'last_completed_unit' => ['task_type' => 'memorization', 'unit' => 'page', 'amount' => 2, 'notes' => 'Completed'],
             ],
             'attendance_preferences' => [
                 'timezone' => 'Asia/Riyadh',

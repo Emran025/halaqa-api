@@ -21,6 +21,10 @@ use App\Http\Controllers\Api\V1\Memberships\UpdateMembershipController;
 use App\Http\Controllers\Api\V1\Notifications\ListNotificationsController;
 use App\Http\Controllers\Api\V1\Notifications\MarkAllNotificationsReadController;
 use App\Http\Controllers\Api\V1\Notifications\MarkNotificationReadController;
+use App\Http\Controllers\Api\V1\Profile\CurrentStudentProfileController;
+use App\Http\Controllers\Api\V1\Profile\CurrentTeacherProfileController;
+use App\Http\Controllers\Api\V1\Profile\TeacherDocumentsController;
+use App\Http\Controllers\Api\V1\Profile\UpdateCurrentProfileController;
 use App\Http\Controllers\Api\V1\Progress\FollowUpItemActionController;
 use App\Http\Controllers\Api\V1\Progress\GetStudentAvailabilityController;
 use App\Http\Controllers\Api\V1\Progress\GetStudentFollowUpPlanController;
@@ -75,6 +79,7 @@ use App\Models\Notification;
 use App\Models\RegistrationRequest;
 use App\Models\SessionTask;
 use App\Models\TaskNote;
+use App\Models\TeacherDocument;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -94,6 +99,15 @@ Route::prefix('v1')->group(function (): void {
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('me', MeController::class);
+        Route::patch('me', UpdateCurrentProfileController::class);
+        Route::get('me/student-profile', [CurrentStudentProfileController::class, 'show']);
+        Route::patch('me/student-profile', [CurrentStudentProfileController::class, 'update']);
+        Route::get('me/teacher-profile', [CurrentTeacherProfileController::class, 'show']);
+        Route::patch('me/teacher-profile', [CurrentTeacherProfileController::class, 'update']);
+        Route::get('me/teacher-documents', [TeacherDocumentsController::class, 'index']);
+        Route::post('me/teacher-documents', [TeacherDocumentsController::class, 'store']);
+        Route::delete('me/teacher-documents/{documentId}', [TeacherDocumentsController::class, 'destroy']);
+        Route::model('documentId', TeacherDocument::class);
 
         Route::get('halaqas', ListHalaqasController::class);
         Route::post('halaqas', CreateHalaqaController::class);

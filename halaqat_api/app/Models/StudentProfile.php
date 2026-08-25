@@ -15,13 +15,17 @@ class StudentProfile extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'user_id', 'memorization_level', 'review_level', 'memorized_juz_count',
+        'user_id', 'memorization_level', 'review_level', 'memorized_juz_count', 'memorized_surah_ids', 'last_completed_unit',
         'previous_memorization_notes', 'stop_reasons', 'bio',
     ];
 
     protected function casts(): array
     {
-        return ['memorized_juz_count' => 'decimal:1'];
+        return [
+            'memorized_juz_count' => 'decimal:1',
+            'memorized_surah_ids' => 'array',
+            'last_completed_unit' => 'array',
+        ];
     }
 
     public function user(): BelongsTo
