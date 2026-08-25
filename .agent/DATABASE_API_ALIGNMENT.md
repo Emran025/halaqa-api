@@ -27,7 +27,7 @@
 |---|---|---|---|---|
 | ملف التوافر الحالي | `student_availability_profiles`, `student_availability_slots` | `AttendancePreferences` | `GET/PUT /students/{studentId}/availability` | `UpdateStudentAvailabilityService` |
 | خطة الطالب | `follow_up_plans`, `follow_up_plan_details` | `FollowUpPlanInput`, `FollowUpPlan`, `PlanDetailInput`, `PlanDetail` | `/students/{studentId}/follow-up-plan`؛ يعرض `timezone`, `version`, وحالة الاعتماد | `CreateFollowUpPlanService`, `UpdateFollowUpPlanService` |
-| عنصر المتابعة | `follow_up_items` | `FollowUpItem`, `FollowUpItemResponse` | قائمة اليوم، إكمال، تجاوز، إعادة جدولة؛ يعرض `plan_id` و`plan_detail_id` و`rescheduled_from_id` صراحةً | `FollowUpQueueQuery`, `CompleteFollowUpItemService`, `RescheduleFollowUpService` |
+| عنصر المتابعة | `follow_up_items` | `FollowUpItem`, `FollowUpItemResponse`, `FollowUpItemCollectionResponse` | `GET /follow-up-items` مع فلاتر `date`, `state`, `task_type`, `student_id` للمعلم، ثم complete/skip/reschedule؛ يعرض `plan_id` و`plan_detail_id` و`rescheduled_from_id` صراحةً، ويستخدم `client_operation_id` مع تحقق صاحب العملية وحالة العنصر | `FollowUpItemService`؛ Query داخلي مقيد بملكية الطالب أو عضوية المعلم النشطة |
 | التنبيه | `notifications` | `Notification` | `/notifications`, القراءة | `NotificationResource`, `MarkNotificationReadService` |
 | التنفيذ المؤجل | `jobs`, `failed_jobs` | لا يعرض مباشرة | توليد الجدولة وإرسال التنبيهات وإعادة المحاولة | Laravel Job + Service |
 

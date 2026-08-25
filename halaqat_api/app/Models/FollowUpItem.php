@@ -11,7 +11,7 @@ class FollowUpItem extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'plan_id', 'plan_detail_id', 'student_id', 'halaqa_id', 'scheduled_for', 'timezone', 'state', 'completed_at', 'skipped_at', 'skip_reason', 'rescheduled_from_id', 'notification_sent_at'];
+    protected $fillable = ['id', 'plan_id', 'plan_detail_id', 'student_id', 'halaqa_id', 'scheduled_for', 'timezone', 'state', 'completed_at', 'skipped_at', 'skip_reason', 'rescheduled_from_id', 'notification_sent_at', 'last_client_operation_id', 'last_operation_by_user_id', 'last_operation_type', 'reschedule_reason'];
 
     protected function casts(): array
     {

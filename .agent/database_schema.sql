@@ -431,17 +431,23 @@ CREATE TABLE follow_up_items (
     skip_reason VARCHAR(500) NULL,
     rescheduled_from_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
     notification_sent_at DATETIME NULL,
+    last_client_operation_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    last_operation_by_user_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    last_operation_type VARCHAR(20) NULL,
+    reschedule_reason VARCHAR(500) NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     PRIMARY KEY (id),
     KEY idx_follow_up_items_student_date (student_id, scheduled_for, state),
     KEY idx_follow_up_items_teacher_queue (halaqa_id, scheduled_for, state),
     KEY idx_follow_up_items_plan (plan_id, scheduled_for),
+    UNIQUE KEY uq_follow_up_items_last_operation (last_client_operation_id),
     CONSTRAINT fk_follow_up_item_plan FOREIGN KEY (plan_id) REFERENCES follow_up_plans(id) ON DELETE RESTRICT,
     CONSTRAINT fk_follow_up_item_detail FOREIGN KEY (plan_detail_id) REFERENCES follow_up_plan_details(id) ON DELETE RESTRICT,
     CONSTRAINT fk_follow_up_item_student FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE RESTRICT,
     CONSTRAINT fk_follow_up_item_halaqa FOREIGN KEY (halaqa_id) REFERENCES halaqas(id) ON DELETE SET NULL,
     CONSTRAINT fk_follow_up_item_rescheduled FOREIGN KEY (rescheduled_from_id) REFERENCES follow_up_items(id) ON DELETE SET NULL,
+    CONSTRAINT fk_follow_up_item_operation_user FOREIGN KEY (last_operation_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
     CONSTRAINT chk_follow_up_item_state CHECK (state IN ('upcoming', 'due', 'in_progress', 'completed', 'skipped', 'overdue'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

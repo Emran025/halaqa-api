@@ -14,8 +14,10 @@ use App\Http\Controllers\Api\V1\Memberships\AssignStudentToHalaqaController;
 use App\Http\Controllers\Api\V1\Memberships\ListHalaqaStudentsController;
 use App\Http\Controllers\Api\V1\Memberships\RemoveStudentFromHalaqaController;
 use App\Http\Controllers\Api\V1\Memberships\UpdateMembershipController;
+use App\Http\Controllers\Api\V1\Progress\FollowUpItemActionController;
 use App\Http\Controllers\Api\V1\Progress\GetStudentAvailabilityController;
 use App\Http\Controllers\Api\V1\Progress\GetStudentFollowUpPlanController;
+use App\Http\Controllers\Api\V1\Progress\ListFollowUpItemsController;
 use App\Http\Controllers\Api\V1\Progress\ListStudentMistakesController;
 use App\Http\Controllers\Api\V1\Progress\ListStudentTrackingsController;
 use App\Http\Controllers\Api\V1\Progress\UpdateStudentAvailabilityController;
@@ -53,6 +55,7 @@ use App\Http\Controllers\Api\V1\Sessions\UpdateMistakeController;
 use App\Http\Controllers\Api\V1\Sessions\UpdateNoteController;
 use App\Http\Controllers\Api\V1\Sessions\UpdateTaskController;
 use App\Http\Controllers\Api\V1\Sessions\UpsertEvaluationController;
+use App\Models\FollowUpItem;
 use App\Models\HalaqaMembership;
 use App\Models\LiveSession;
 use App\Models\Mistake;
@@ -96,6 +99,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('registration-requests/{registrationRequest}/request-completion', [RegistrationDecisionController::class, 'requestCompletion']);
 
         Route::model('membership', HalaqaMembership::class);
+        Route::model('followUpItem', FollowUpItem::class);
         Route::model('registrationRequest', RegistrationRequest::class);
         Route::get('students/{student}/availability', GetStudentAvailabilityController::class);
         Route::put('students/{student}/availability', UpdateStudentAvailabilityController::class);
@@ -103,6 +107,10 @@ Route::prefix('v1')->group(function (): void {
         Route::put('students/{student}/follow-up-plan', UpdateStudentFollowUpPlanController::class);
         Route::get('students/{student}/trackings', ListStudentTrackingsController::class);
         Route::get('students/{student}/mistakes', ListStudentMistakesController::class);
+        Route::get('follow-up-items', ListFollowUpItemsController::class);
+        Route::post('follow-up-items/{followUpItem}/complete', [FollowUpItemActionController::class, 'complete']);
+        Route::post('follow-up-items/{followUpItem}/skip', [FollowUpItemActionController::class, 'skip']);
+        Route::post('follow-up-items/{followUpItem}/reschedule', [FollowUpItemActionController::class, 'reschedule']);
         Route::model('student', User::class);
         Route::post('realtime/channels/authorize', AuthorizeRealtimeChannelController::class);
         Route::get('quran/surahs', [QuranController::class, 'surahs']);
