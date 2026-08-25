@@ -24,6 +24,9 @@ class LiveSessionTest extends TestCase
         $response = $this->withToken($teacher['token'])->postJson('/api/v1/sessions', ['halaqa_id' => $halaqa->id, 'student_id' => $student['user']['id'], 'task_type' => 'memorization', 'scheduled_at' => null, 'client_operation_id' => (string) Str::uuid()]);
         $response->assertCreated()->assertJsonPath('session.state', 'requested')
             ->assertJsonPath('session.direct_p2p_only', true)->assertJsonMissingPath('session.sdp')->assertJsonMissingPath('session.ice');
+
+        $this->withToken($teacher['token'])->postJson('/api/v1/sessions/'.$response->json('session.id').'/tasks', ['task_type' => 'memorization', 'planned_amount' => 2, 'sequence_no' => 1, 'client_operation_id' => (string) Str::uuid()])
+            ->assertCreated()->assertJsonPath('task.task_type', 'memorization')->assertJsonPath('task.state', 'draft')->assertJsonPath('task.sequence_no', 1);
     }
 
     public function test_second_active_session_is_rejected(): void

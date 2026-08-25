@@ -18,3 +18,7 @@ CreateSessionRequest -> LiveSessionService -> LiveSession/HalaqaMembership/Track
 ## الصلاحيات والاختبارات
 
 لا يُسمح إلا للمعلم المصادق. تتحقق الخدمة من أن الطالب عضو فعال في الحلقة وأن الحلقة مملوكة للمعلم. يغطي `LiveSessionTest` الإنشاء الناجح، `direct_p2p_only`, غياب حقول الوسائط، ومنع الجلسة النشطة الثانية. ستُضاف انتقالات القبول والاتصال والإنهاء والإشارة الداخلية في شرائح لاحقة منفصلة بعد شهادة هذه الأساس.
+
+## امتداد مهام الجلسة
+
+أضيف `POST /api/v1/sessions/{session}/tasks` وفق `CreateTaskInput`، مع Migration وModel وRequest وResource وخدمة داخل `LiveSessionService`. لا تُنشأ المهمة إلا من معلم الجلسة وفي حالة قابلة للإدارة، ويمنع تكرار `sequence_no`. أضيفت Migration `quran_range_units` قبل FK المهمة لأن عقد MySQL يربط النطاقين المخططين ببيانات المصحف المرجعية. يغطي اختبار الجلسة إنشاء المهمة بحالة `draft` ونوع التتبع والتسلسل.

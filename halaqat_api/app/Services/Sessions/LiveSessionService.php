@@ -5,6 +5,7 @@ namespace App\Services\Sessions;
 use App\Exceptions\ApiConflictException;
 use App\Models\HalaqaMembership;
 use App\Models\LiveSession;
+use App\Models\SessionTask;
 use App\Models\TrackingType;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,22 @@ use Illuminate\Support\Str;
 
 class LiveSessionService
 {
+    public function createTask(User $teacher, LiveSession $session, array $data): SessionTask
+    {
+        return DB::transaction(function () use ($teacher, $session, $data): SessionTask {
+            if ($session->teacher_id !== $teacher->id || ! in_array($session->state, ['requested', 'accepted', 'connecting', 'connected'], true)) {
+                throw new ApiConflictException('The session is not managed by this teacher or is not available.', 'session_not_manageable', 'session', $session->id);
+            }
+            $sequence = $data['sequence_no'] ?? ((int) $session->tasks()->max('sequence_no') + 1);
+            if ($session->tasks()->where('sequence_no', $sequence)->exists()) {
+                throw new ApiConflictException('The task sequence already exists for this session.', 'task_sequence_exists', 'session', $session->id);
+            }
+            $typeId = TrackingType::query()->where('code', $data['task_type'])->value('id');
+
+            return SessionTask::create(['id' => (string) Str::uuid(), 'session_id' => $session->id, 'tracking_type_id' => $typeId, 'sequence_no' => $sequence, 'planned_amount' => $data['planned_amount'] ?? null, 'planned_from_unit_id' => $data['planned_from_unit_id'] ?? null, 'planned_to_unit_id' => $data['planned_to_unit_id'] ?? null, 'state' => 'draft'])->load('trackingType');
+        });
+    }
+
     public function create(User $teacher, array $data): LiveSession
     {
         return DB::transaction(function () use ($teacher, $data): LiveSession {

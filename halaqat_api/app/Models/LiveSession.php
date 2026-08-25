@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LiveSession extends Model
 {
@@ -41,5 +42,10 @@ class LiveSession extends Model
     public function taskType(): BelongsTo
     {
         return $this->belongsTo(TrackingType::class, 'task_type_id');
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(SessionTask::class, 'session_id')->orderBy('sequence_no');
     }
 }
