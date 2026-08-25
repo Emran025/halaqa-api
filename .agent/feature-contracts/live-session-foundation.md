@@ -26,3 +26,7 @@ CreateSessionRequest -> LiveSessionService -> LiveSession/HalaqaMembership/Track
 ## امتداد سجل المتابعة
 
 أضيفت جداول `daily_trackings` و`tracking_details` وModel طبقي لها، مع `GET /api/v1/students/{student}/trackings` وRequest وResource صريحين. يقرأ الطالب سجله، ويقرأه المعلم المرتبط بعضوية فعالة فقط؛ لا يكفي حساب معلم غير مرتبط. عمليات إنشاء وتعديل تفاصيل الحضور والتفصيل الكامل ستضاف مع مسارات العقد الأخرى في دورة لاحقة قبل اعتبار التتبع مكتملًا.
+
+## امتداد تخزين الأخطاء والملاحظات والتقييمات
+
+أضيفت جداول `mistakes`, `task_notes`, و`task_evaluations` مع نماذج Soft Delete للأخطاء والملاحظات وقيد تقييم واحد لكل مقيّم ومهمة. هذا Commit يثبت طبقة التخزين والعلاقات فقط؛ لا يُعتبر API الأخطاء/الملاحظات/التقييم مكتملًا حتى تُضاف Requests وResources وPolicies وServices ومساراتها واختبارات HTTP الخاصة بها.
