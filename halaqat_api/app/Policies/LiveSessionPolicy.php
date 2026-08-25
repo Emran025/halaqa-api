@@ -47,6 +47,16 @@ class LiveSessionPolicy
         return $this->isParticipant($user, $session) && ! in_array($session->state, ['cancelled', 'rejected'], true);
     }
 
+    public function realtime(User $user, LiveSession $session): bool
+    {
+        return $this->isParticipant($user, $session) && ! in_array($session->state, ['requested', 'cancelled', 'rejected', 'ended'], true);
+    }
+
+    public function reconnect(User $user, LiveSession $session): bool
+    {
+        return $this->isParticipant($user, $session) && ! in_array($session->state, ['requested', 'cancelled', 'rejected', 'ended'], true);
+    }
+
     private function isParticipant(User $user, LiveSession $session): bool
     {
         return $session->teacher_id === $user->id || $session->student_id === $user->id;

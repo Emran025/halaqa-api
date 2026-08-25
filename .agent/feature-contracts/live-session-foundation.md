@@ -35,6 +35,10 @@ CreateSessionRequest -> LiveSessionService -> LiveSession/HalaqaMembership/Track
 
 أضيفت جداول `mistakes`, `task_notes`, و`task_evaluations` مع نماذج Soft Delete للأخطاء والملاحظات، وcomposite Quran FKs، وclient_operation_id فريد للأخطاء والملاحظات، وقيد تقييم واحد لكل مقيّم ومهمة. اكتملت مسارات أخطاء المهمة GET/POST/PATCH/DELETE، ومسارات الملاحظات GET/POST/PATCH/DELETE، ومسارات التقييم GET/PUT، مع Requests وResources وPolicies وSessionAnnotationService واختبارات HTTP للملكية والتكرار والنطاقات والحذف المنطقي. لا تزال قائمة أخطاء الطالب التاريخية مرتبطة بمسار القراءة السابق، ولا تُعد تقارير الجلسة أو حالات المهمة المتقدمة مكتملة بهذه الشريحة.
 
+## امتداد REST للاتصال اللحظي
+
+أضيفت مسارات `GET /api/v1/sessions/{session}/realtime` و`POST /api/v1/sessions/{session}/reconnect` و`POST /api/v1/realtime/channels/authorize`. تعيد إعدادات realtime قناة `private-live-session.{session_id}` وعنوان WebSocket الداخلي وسياسة `laravel_websocket` و`host_only` و`webrtc_peer_to_peer` مع `direct_p2p_only=true`، دون STUN أو TURN أو Relay أو Media Server. يقصر `LiveSessionPolicy` المسارات على طرفي جلسة مقبولة أو حية، ويحوّل reconnect الحالة الرسمية إلى `reconnecting` داخل Transaction. يتحقق تفويض القناة من اسم القناة ومطابقته للجلسة ومن هوية الطرف، ويعيد المعرّف المقابل وانتهاء تفويض قصير. تنفيذ WebSocket الداخلي وتمرير رسائل signaling الفعلية ما زال شريحة لاحقة ولا يُعد منفذًا بمجرد توفر إعدادات REST.
+
 ## قائمة أخطاء الطالب
 
 أضيف `GET /api/v1/students/{student}/mistakes` مع `MistakeType` و`MistakeCollectionResource` وتطبيق `StudentLearningPolicy`. يعرض السجلات النشطة فقط ويقصر المعلم على الطالب ذي العضوية الفعالة. وأضيف CRUD الأخطاء المرتبطة بمهمة الجلسة مع `MistakePolicy` وService وidempotency، والتحقق من الإصدار الافتراضي والآية والصفحة، والحذف المنطقي. ما زالت التحديثات الجماعية والتقرير النهائي خارج هذه الشريحة.
