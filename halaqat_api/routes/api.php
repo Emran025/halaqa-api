@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\Progress\GetStudentAvailabilityController;
 use App\Http\Controllers\Api\V1\Progress\GetStudentFollowUpPlanController;
 use App\Http\Controllers\Api\V1\Progress\UpdateStudentAvailabilityController;
 use App\Http\Controllers\Api\V1\Progress\UpdateStudentFollowUpPlanController;
+use App\Http\Controllers\Api\V1\Quran\QuranController;
 use App\Http\Controllers\Api\V1\Registrations\CancelRegistrationRequestController;
 use App\Http\Controllers\Api\V1\Registrations\CreateRegistrationRequestController;
 use App\Http\Controllers\Api\V1\Registrations\GetRegistrationRequestController;
@@ -68,5 +69,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('students/{student}/follow-up-plan', GetStudentFollowUpPlanController::class);
         Route::put('students/{student}/follow-up-plan', UpdateStudentFollowUpPlanController::class);
         Route::model('student', User::class);
+        Route::get('quran/surahs', [QuranController::class, 'surahs']);
+        Route::get('quran/pages/{pageNumber}', [QuranController::class, 'page'])->whereNumber('pageNumber');
+        Route::get('quran/ayahs/{ayahId}', [QuranController::class, 'ayah'])->whereNumber('ayahId');
     });
 });

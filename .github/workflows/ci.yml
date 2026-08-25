@@ -45,8 +45,10 @@ jobs:
           mkdir -p database
           touch database/database.sqlite
 
-      - name: Verify database migrations
-        run: php artisan migrate --force
+      - name: Verify database migrations and reference seed
+        run: |
+          php artisan migrate --force
+          php artisan db:seed --force
 
       - name: Check Laravel code style
         run: vendor/bin/pint --test
