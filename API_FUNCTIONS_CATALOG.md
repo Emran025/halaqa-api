@@ -124,8 +124,8 @@
 | مغادرة الجلسة | `POST /sessions/{sessionId}/leave` | الطرفان | يسجل المغادرة ولا يعتمد التقرير. |
 | إنهاء الجلسة | `POST /sessions/{sessionId}/end` | المعلم | ينهي الاتصال المنطقي ويترك التقرير قابلًا للاعتماد. |
 | تسجيل إعادة الاتصال | `POST /sessions/{sessionId}/reconnect` | الطرفان | يعيد حالة التفاوض ويعيد إعدادات الاتصال عند الحاجة. |
-| إعدادات WebRTC | `GET /sessions/{sessionId}/realtime` | الطرفان | `GetRealtimeSessionConfigService`، ولا يعيد أسرارًا دائمة. |
-| مصادقة قناة البث | `POST /broadcasting/auth` | الطرفان | قناة خاصة مع `BroadcastChannelPolicy`. |
+| إعدادات WebRTC | `GET /sessions/{sessionId}/realtime` | الطرفان | `GetRealtimeSessionConfigService` يعيد معرّفات الجلسة وإعدادات التفاوض المباشر فقط، ولا يعيد إعدادات STUN/TURN أو Relay أو أسرارًا دائمة. |
+| تفويض قناة WebSocket الداخلية | `POST /realtime/channels/authorize` | الطرفان | `LiveSessionChannelAuthorizer` داخل Laravel، دون Broadcasting أو مزود خارجي. |
 
 ## وظائف المهام
 
@@ -187,7 +187,7 @@
 | تعليم إشعار كمقروء | `POST /notifications/{notificationId}/read` | صاحب الإشعار. |
 | تعليم الكل كمقروء | `POST /notifications/read-all` | المستخدم الحالي. |
 
-أما إشعارات الجلسة الفورية فتُبث عبر Laravel Broadcasting، وتُحفظ نسخة قابلة للعرض في قائمة الإشعارات عند الحاجة.
+أما إشعارات الجلسة الفورية فتُمرر عبر WebSocket الداخلي المضمن في Laravel إلى طرفي الجلسة فقط، وتُحفظ نسخة قابلة للعرض في قائمة الإشعارات عند الحاجة. لا يستخدم هذا المسار Broadcasting خارجيًا أو مزود بث.
 
 ## مسار Laravel القياسي لكل Endpoint
 

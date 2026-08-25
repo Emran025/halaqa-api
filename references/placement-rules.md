@@ -17,7 +17,10 @@
 | Event | `app/Events` | إعلان أن حدثًا وقع. | تنفيذ كل منطق الأعمال داخل الحدث. |
 | Listener | `app/Listeners` | الاستجابة لحدث بطريقة مفصولة. | إعادة تنفيذ العملية الأصلية أو إخفاء الفشل. |
 | Notification | `app/Notifications` | إرسال تنبيه لقناة أو مستخدم. | تعديل البيانات الأساسية دون Service. |
-| Integration Client | `app/Support/Integrations` | تغليف عميل REST أو خدمة خارجية متكررة. | وضع تفاصيل HTTP الخارجي داخل Controller. |
+| Realtime WebSocket Server | `app/Realtime/WebSocket` | إدارة handshake والإطارات والاتصالات داخل Laravel. | نقل الصوت/الفيديو، قواعد المجال، أو استخدام خادم/مكتبة خارجية. |
+| Realtime Channel Authorizer | `app/Realtime/Channels` | التحقق من أن الاتصال أحد طرفي الجلسة. | قناة عامة أو قبول معرف جلسة دون Policy. |
+| WebRTC Signaling Service | `app/Realtime/Signaling` | تمرير offer/answer/host ICE بعد التحقق. | تفسير SDP، تخزين ICE، أو إنشاء Relay/STUN/TURN. |
+| Integration Client | `app/Support/Integrations` | غير مستخدم في هذا المشروع؛ لا تنشئه للاتصال اللحظي. | إضافة API أو مزود أو مكتبة خارجية. |
 | DTO/Data | `app/Support/Data` | نقل قيم منظمة بين الطبقات عند الحاجة. | تحويل DTO إلى طبقة تخزين أو استجابة تلقائيًا دون قرار واضح. |
 | Enum | `app/Enums` | قيم محددة مثل حالة الجلسة أو نوع الخطأ. | استخدام نصوص مكررة غير موحدة في كل الطبقات. |
 | Migration | `database/migrations` | إنشاء أو تعديل بنية قاعدة البيانات. | إنشاء الجداول أثناء طلب HTTP. |
@@ -34,8 +37,9 @@
 5. هل العملية تغير حالة أو تنفذ أكثر من خطوة أو تستخدم أكثر من Model؟ استخدم Service.
 6. هل العملية طويلة أو لا تحتاج نتيجة فورية؟ استخدم Service + Job.
 7. هل القرار متعلق بملكية مستخدم لمورد؟ استخدم Policy.
-8. هل الحدث يجب بثه أو إرساله إلى مستمع؟ استخدم Event وBroadcast/Listener.
-9. هل يتكرر اتصال خارجي؟ أنشئ Integration Client تستدعيه Service.
+8. هل الحدث داخلي لحظي؟ استخدم `app/Realtime`، وتحقق من أنه لا ينقل وسائط وأنه لا يحتاج مزودًا خارجيًا.
+9. هل يحتاج الاتصال إلى إشارات WebRTC؟ استخدم `WebRtcSignalingService` داخل Laravel، ومرر Host ICE فقط دون STUN/TURN أو Relay.
+10. لا تنشئ Integration Client أو تعتمد على حزمة أو خدمة خارجية؛ هذا المشروع Laravel-native وP2P-only.
 
 ## معيار استخدام Service
 
@@ -67,10 +71,13 @@ HTTP Request
 في العمليات الفورية:
 
 ```text
-Controller
+Controller أو WebSocket Handshake
+    -> Policy / Channel Authorizer
     -> Service
-    -> حفظ الحدث الرسمي في قاعدة البيانات
-    -> Event / Broadcast إلى قناة مصرح بها
-    -> WebRTC أو WebSocket عند الحاجة
-    -> Resource للاستجابة الحالية
+    -> حفظ الحدث الرسمي في قاعدة البيانات عند الحاجة
+    -> Laravel WebSocket الداخلي للإشارة وحالة القناة
+    -> WebRTC P2P للصوت والفيديو وDataChannel للتفاعل
+    -> Resource للاستجابة الحالية عبر REST
 ```
+
+لا يوجد في هذا المسار Media Server أو Relay أو Proxy أو STUN أو TURN أو مزود بث خارجي.

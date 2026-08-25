@@ -42,6 +42,10 @@ project-root/
 │   ├── Notifications/
 │   ├── Policies/
 │   ├── Providers/
+│   ├── Realtime/
+│   │   ├── Channels/
+│   │   ├── Signaling/
+│   │   └── WebSocket/
 │   ├── Queries/
 │   │   ├── Halaqas/
 │   │   ├── LiveSessions/
@@ -117,3 +121,28 @@ app/
 └── Jobs/LiveSession/
     └── PersistSessionAnalyticsJob.php
 ```
+
+
+## بنية الاتصال اللحظي الداخلية
+
+```text
+app/
+├── Console/Commands/Realtime/
+│   └── RunWebSocketServerCommand.php
+├── Realtime/
+│   ├── Channels/
+│   │   └── LiveSessionChannelAuthorizer.php
+│   ├── Signaling/
+│   │   └── WebRtcSignalingService.php
+│   └── WebSocket/
+│       ├── WebSocketServer.php
+│       ├── ConnectionManager.php
+│       ├── FrameCodec.php
+│       └── HandshakeService.php
+├── Services/LiveSessions/
+│   ├── AuthorizeRealtimeSessionService.php
+│   └── PublishSessionStateService.php
+└── Policies/LiveSessionPolicy.php
+```
+
+تُنفذ هذه المكونات داخل تطبيق Laravel نفسه. لا يجوز إضافة حزمة Composer أو خادم مستقل أو مزود بث لتنفيذها. `FrameCodec` مسؤول عن البروتوكول فقط، و`ConnectionManager` عن الاتصالات، و`WebRtcSignalingService` عن تمرير الإشارات بعد التفويض، بينما تبقى قواعد الجلسة في Services وPolicies.

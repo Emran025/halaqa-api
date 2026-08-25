@@ -7,19 +7,28 @@ description: Laravel architecture governance for AI agents. Use when creating, m
 
 ## الهدف
 
-طبّق هذه المهارة عند إنشاء أو تعديل أي جزء من مشروع Laravel، خصوصًا في مشاريع API التي تحتوي على مصادقة، حلقات، طلاب، جلسات مباشرة، تقارير، أو تكاملات خارجية. الهدف هو منع الوكيل من وضع منطق غير مناسب داخل Controller أو إنشاء ملفات في أماكن عشوائية، مع الحفاظ على بنية قابلة للتوسع.
+طبّق هذه المهارة عند إنشاء أو تعديل أي جزء من مشروع Laravel، خصوصًا في مشروع حلقات تحفيظ القرآن الذي يحتوي على مصادقة، حلقات، طلاب، جلسات مباشرة، مصحف تفاعلي، تقارير، وجدولة متابعة. الهدف هو منع الوكيل من وضع منطق غير مناسب داخل Controller أو إنشاء ملفات في أماكن عشوائية، مع الحفاظ على بنية قابلة للتوسع.
+
+## ملف المشروع الملزم
+
+هذا المشروع محصور في دورين: `teacher` و`student`. Laravel هو الـbackend الأولي والوحيد، ويتولى REST API والمصادقة والصلاحيات والحفظ الرسمي وتشغيل WebSocket الداخلي والإشارة إلى WebRTC. الصوت والفيديو وبيانات العرض اللحظية تنتقل P2P مباشرة بين المعلم والطالب فقط.
+
+يُمنع إدخال أي طرف ثالث أو خادم وسائط أو Relay أو Proxy أو STUN أو TURN أو Pusher أو Reverb أو Soketi أو Socket.IO أو SIPSorcery أو أي مكتبة خارجية لتنفيذ WebSocket أو WebRTC. إذا تعذر الاتصال المباشر، تفشل الجلسة بأمان بحالة واضحة ولا تتحول إلى مسار مرحل. Laravel هو وسيط التحكم والإشارة فقط، وليس وسيط الصوت أو الفيديو.
 
 ## قاعدة التشغيل الإلزامية
 
 لا تكتب كودًا قبل تنفيذ هذه الخطوات بالترتيب:
 
 1. افحص بنية المشروع الحالية باستخدام `tree /f` على Windows أو أمر مكافئ مثل `find . -maxdepth 4 -type f` على Linux/macOS.
-2. اقرأ [references/canonical-tree.md](references/canonical-tree.md) وقارنها بالبنية الفعلية للمشروع.
-3. اقرأ [references/placement-rules.md](references/placement-rules.md) لتحديد مكان كل ملف.
-4. حدد حالات الاستخدام، المدخلات، المخرجات، الصلاحيات، وطول العملية قبل اختيار طبقة التنفيذ.
-5. طبّق التعديل بأقل تغيير ممكن، ولا تخلط نمطًا معماريًا جديدًا مع نمط قائم دون سبب موثق.
-6. شغّل [scripts/validate_laravel_tree.py](scripts/validate_laravel_tree.py) أو طبّق قائمة التحقق في [references/validation-checklist.md](references/validation-checklist.md).
-7. اعرض في النتيجة الملفات التي أُنشئت أو عُدلت، وسبب وضع كل ملف في مكانه.
+2. اقرأ [PROJECT_ARCHITECTURE_POLICY.md](PROJECT_ARCHITECTURE_POLICY.md) وثبت القرارات الملزمة قبل أي تصميم.
+3. اقرأ [references/canonical-tree.md](references/canonical-tree.md) وقارنها بالبنية الفعلية للمشروع.
+4. اقرأ [references/placement-rules.md](references/placement-rules.md) لتحديد مكان كل ملف.
+5. حدد حالات الاستخدام، المدخلات، المخرجات، الصلاحيات، وطول العملية قبل اختيار طبقة التنفيذ.
+6. اقرأ `references/realtime-and-webrtc.md` و`REALTIME_CONTRACT.md` عند أي عمل متعلق بالجلسات أو WebSocket أو WebRTC أو المصحف اللحظي.
+7. طبّق التعديل بأقل تغيير ممكن، ولا تخلط نمطًا معماريًا جديدًا مع نمط قائم دون سبب موثق.
+8. شغّل [scripts/validate_laravel_tree.py](scripts/validate_laravel_tree.py) أو طبّق قائمة التحقق في [references/validation-checklist.md](references/validation-checklist.md).
+9. افحص عدم وجود طرف ثالث أو Media Server أو Relay أو STUN/TURN في أي تعديل لحظي.
+10. اعرض في النتيجة الملفات التي أُنشئت أو عُدلت، وسبب وضع كل ملف في مكانه.
 
 إذا تعارضت البنية المرجعية مع بنية المشروع القائمة، فالأولوية للتوافق مع المشروع القائم بشرط تسجيل الاستثناء وعدم إنشاء نمطين متنافسين داخل الوحدة نفسها.
 
@@ -65,11 +74,11 @@ description: Laravel architecture governance for AI agents. Use when creating, m
 
 استخدم Policies أو Gates للصلاحيات التي تعتمد على Model أو مورد محدد، وضعها في `app/Policies`. يجب أن يتحقق النظام من أن المعلم يملك الحلقة أو الجلسة، وأن الطالب مرتبط بها، قبل القراءة أو التعديل أو الاعتماد.
 
-### Events وNotifications وBroadcasting
+### Events وNotifications وWebSocket الداخلي
 
-ضع Events في `app/Events`، وListeners في `app/Listeners`، وNotifications في `app/Notifications`. ضع تعريف صلاحية قنوات البث في `routes/channels.php` أو الموضع المعتمد في إصدار Laravel المستخدم.
+ضع Events في `app/Events`، وListeners في `app/Listeners`، وNotifications في `app/Notifications`. لا تستخدم Laravel Broadcasting عبر مزود أو حزمة خارجية. ضع قناة الجلسة وتفويضها في `app/Realtime/Channels`، وتنفيذ WebSocket وإدارة الاتصالات وترميز الإطارات في `app/Realtime/WebSocket`، وخدمة الإشارة في `app/Realtime/Signaling`.
 
-استخدم Broadcasting وWebSocket للأحداث اللحظية مثل حالة الجلسة، الإشارات، ومزامنة علامة المصحف. لا تضع الصوت أو الفيديو داخل Laravel؛ الوسائط المباشرة تسير عبر WebRTC، بينما يحفظ Laravel الحالة والبيانات الرسمية.
+استخدم WebSocket الداخلي داخل Laravel لحالة الجلسة وإشارات `offer`, `answer`, و`ice_candidate` فقط. استخدم WebRTC P2P للصوت والفيديو، وDataChannel P2P لأحداث العرض اللحظية. لا تضع الصوت أو الفيديو أو SDP أو ICE داخل Laravel أو قاعدة البيانات، ويحفظ Laravel الحالة والبيانات الرسمية عبر Services.
 
 ### قاعدة البيانات والاختبارات
 
@@ -88,9 +97,9 @@ description: Laravel architecture governance for AI agents. Use when creating, m
 | أكثر من خطوة أو Model أو Transaction | Service |
 | تنفيذ طويل أو قابل للتأجيل | Service + Job |
 | صلاحية مرتبطة بمورد | Policy |
-| حدث لحظي أو بث | Event + Broadcast/Notification |
+| حدث لحظي أو إشارة | Event أو WebSocket داخلي عبر `app/Realtime` |
 | استعلام تقريري مركب | Query Service أو Service مخصص |
-| استدعاء REST API خارجي | Service + Client class عند تكرار التكامل |
+| اتصال لحظي داخلي | `app/Realtime` + Service + Policy، دون مكتبة أو مزود خارجي |
 | تخزين أو تعديل Schema | Migration |
 
 ## سير العمل حسب نوع المهمة
@@ -123,8 +132,10 @@ description: Laravel architecture governance for AI agents. Use when creating, m
 
 اقرأ الملفات المرجعية بحسب الحاجة:
 
+- استخدم [PROJECT_ARCHITECTURE_POLICY.md](PROJECT_ARCHITECTURE_POLICY.md) كمرجع أعلى لنطاق النظام وقرارات Laravel-only وP2P-only.
 - استخدم [references/canonical-tree.md](references/canonical-tree.md) عند إنشاء أو نقل ملفات.
 - استخدم [references/placement-rules.md](references/placement-rules.md) عند اختيار الطبقة المناسبة.
 - استخدم [references/realtime-and-webrtc.md](references/realtime-and-webrtc.md) عند بناء WebSocket أو WebRTC أو مزامنة المصحف.
 - استخدم [references/validation-checklist.md](references/validation-checklist.md) عند مراجعة أو اعتماد التعديل.
+- اعتبر `REALTIME_CONTRACT.md` عقدًا ملزمًا للقناة الداخلية وP2P، ولا تقترح بديلًا خارجيًا.
 - استخدم [templates/feature-contract.md](templates/feature-contract.md) قبل بناء ميزة جديدة متعددة الطبقات.

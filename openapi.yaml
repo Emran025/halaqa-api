@@ -1,12 +1,13 @@
 openapi: 3.1.1
 info:
   title: Quran Halaqa Live API
-  version: 1.0.0
+  version: 1.1.0
   description: |
-    العقد الرسمي للاتصال بين تطبيق WPF للمعلم أو الطالب وخادم Laravel.
-    يستخدم REST للبيانات الرسمية القابلة للحفظ، ويستخدم WebSocket للإشارات
-    والأحداث اللحظية. تنتقل الوسائط الصوتية والمرئية عبر WebRTC ولا تمر عبر
-    REST أو WebSocket.
+    العقد الرسمي للاتصال بين تطبيق WPF للمعلم أو الطالب وخادم Laravel الوحيد.
+    يستخدم REST للبيانات الرسمية القابلة للحفظ، ويستخدم WebSocket الداخلي المضمن
+    داخل Laravel للإشارة وحالة القناة فقط. تنتقل الوسائط الصوتية والمرئية وبيانات
+    التفاعل المباشر عبر WebRTC P2P مباشرة بين المعلم والطالب دون Media Server أو
+    Relay أو Proxy أو STUN أو TURN أو أي طرف ثالث.
   contact:
     name: Quran Halaqa API Team
 x-realtime-contract: REALTIME_CONTRACT.md
@@ -1656,41 +1657,31 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
-  /broadcasting/auth:
+  /realtime/channels/authorize:
     post:
       tags: [Realtime]
-      summary: مصادقة قناة WebSocket الخاصة بالجلسة
-      operationId: authorizePrivateBroadcastChannel
+      summary: تفويض قناة WebSocket الداخلية
+      description: يفوض قناة جلسة خاصة داخل خادم Laravel WebSocket المضمن، ولا يعتمد على Laravel Broadcasting أو مزود خارجي.
+      operationId: authorizeRealtimeChannel
       requestBody:
         required: true
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
-              type: object
-              required: [socket_id, channel_name]
-              properties:
-                socket_id:
-                  type: string
-                channel_name:
-                  type: string
-                  pattern: '^private-live-session\\..+'
+              $ref: '#/components/schemas/RealtimeChannelAuthorizationInput'
       responses:
         '200':
-          description: بيانات مصادقة القناة
+          description: تم تفويض القناة
           content:
             application/json:
               schema:
-                type: object
-                required: [auth]
-                properties:
-                  auth:
-                    type: string
-                  channel_data:
-                    type: string
+                $ref: '#/components/schemas/RealtimeChannelAuthorizationResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /sessions/{sessionId}/report:
     parameters:
       - $ref: '#/components/parameters/SessionId'
@@ -2452,6 +2443,41 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TeacherDocument'
+    RealtimeChannelAuthorizationInput:
+      type: object
+      required: [session_id, channel_name]
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        channel_name:
+          type: string
+          pattern: '^private-live-session\\..+'
+        client_connection_id:
+          type: [string, 'null']
+          maxLength: 120
+    RealtimeChannelAuthorizationResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [authorized, channel_name, session_id, recipient_id]
+          properties:
+            authorized:
+              type: boolean
+              const: true
+            channel_name:
+              type: string
+            session_id:
+              type: string
+              format: uuid
+            recipient_id:
+              type: string
+              format: uuid
+            expires_at:
+              type: string
+              format: date-time
     Gender:
       type: string
       enum: [male, female]
@@ -3064,7 +3090,7 @@ components:
       enum: [memorization, review, recitation]
     SessionState:
       type: string
-      enum: [requested, accepted, connecting, connected, weak_connection, reconnecting, disconnected, ended, cancelled, rejected]
+      enum: [requested, accepted, connecting, direct_negotiation, connected, weak_connection, reconnecting, disconnected, direct_connection_unavailable, ended, cancelled, rejected]
     ReportState:
       type: string
       enum: [draft, pending_student_acknowledgment, completed, reopened]
@@ -3755,36 +3781,33 @@ components:
         created_at:
           type: string
           format: date-time
-    IceServer:
-      type: object
-      required: [urls]
-      properties:
-        urls:
-          oneOf:
-            - type: string
-            - type: array
-              items:
-                type: string
-        username:
-          type: [string, 'null']
-        credential:
-          type: [string, 'null']
     RealtimeSession:
       type: object
-      required: [session_id, channel_name, websocket_url, ice_servers, expires_at]
+      required: [session_id, channel_name, websocket_url, expires_at, direct_p2p_only, signaling_transport, ice_candidate_policy]
       properties:
         session_id:
           type: string
           format: uuid
         channel_name:
           type: string
+          pattern: '^private-live-session\\..+'
         websocket_url:
           type: string
           format: uri
-        ice_servers:
-          type: array
-          items:
-            $ref: '#/components/schemas/IceServer'
+          description: عنوان خادم WebSocket الداخلي لتطبيق Laravel نفسه.
+        signaling_transport:
+          type: string
+          enum: [laravel_websocket]
+        direct_p2p_only:
+          type: boolean
+          const: true
+        ice_candidate_policy:
+          type: string
+          enum: [host_only]
+          description: لا يسمح باستخدام STUN أو TURN أو Relay.
+        media_transport:
+          type: string
+          enum: [webrtc_peer_to_peer]
         expires_at:
           type: string
           format: date-time

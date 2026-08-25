@@ -1,7 +1,20 @@
 # عقد الاتصال اللحظي
-## WebSocket وWebRTC Signaling
+## Laravel WebSocket وWebRTC P2P
 
-ملف `openapi.yaml` يصف REST API، أما هذا الملف فيصف قناة الاتصال اللحظي التي يستخدمها تطبيق WPF مع Laravel Reverb أو خادم WebSocket متوافق.
+هذا الملف مكمل لملف `openapi.yaml`. يصف القناة اللحظية التي يتصل بها تطبيق WPF مع خادم WebSocket المضمن داخل تطبيق Laravel نفسه.
+
+## المبادئ الملزمة
+
+| القرار | العقد |
+|---|---|
+| خادم التحكم | Laravel داخل المستودع نفسه. |
+| WebSocket | تنفيذ داخلي مخصص داخل Laravel/PHP، دون Reverb أو Pusher أو Soketi أو Socket.IO أو أي مكتبة خارجية. |
+| الصوت والصورة | WebRTC P2P مباشر بين المعلم والطالب فقط. |
+| الوسيط الإعلامي | غير موجود. لا Media Server ولا Relay ولا Proxy. |
+| STUN/TURN | غير مستخدمين. يعتمد الاتصال على Host ICE Candidates المباشرة. |
+| البيانات الرسمية | REST API إلى Laravel. |
+| أحداث العرض المؤقتة | WebRTC DataChannel P2P. |
+| إشارات التفاوض | WebSocket Laravel، تمرير مؤقت فقط. |
 
 ## القناة
 
@@ -9,7 +22,7 @@
 private-live-session.{session_id}
 ```
 
-لا يسمح Laravel بالاشتراك إلا للمستخدم الذي يطابق `teacher_id` أو `student_id` في الجلسة، وبعد التحقق من أن الجلسة ليست `cancelled` أو `rejected` أو `ended` نهائيًا.
+ينفذ `LiveSessionChannelAuthorizer` التحقق من Bearer Token ومن أن المستخدم هو أحد طرفي الجلسة. لا يسمح بالاشتراك العام أو بالاعتماد على معرف الجلسة وحده.
 
 ## غلاف الرسالة
 
@@ -18,6 +31,7 @@ private-live-session.{session_id}
   "message_id": "uuid",
   "session_id": "uuid",
   "sender_id": "uuid",
+  "recipient_id": "uuid",
   "sender_role": "teacher",
   "type": "webrtc.offer",
   "occurred_at": "2026-08-25T10:00:00Z",
@@ -26,29 +40,30 @@ private-live-session.{session_id}
 }
 ```
 
-`client_operation_id` اختياري للأحداث التي يجب ألا تحفظ مرتين، مثل خطأ أو تغيير حالة مصحف. يجب أن يعيد الخادم أو طبقة الحفظ العملية نفسها إذا وصلت الرسالة مرة أخرى.
+يتحقق Laravel من `sender_id` و`recipient_id` وعلاقتهما بالجلسة، ولا يثق في الدور الذي يرسله العميل. لا يسمح بتمرير رسالة إلى طرف ثالث.
 
-## أنواع الرسائل
+## رسائل WebSocket المسموح بها
 
-| النوع | المرسل | المستقبل | الغرض | حفظ رسمي |
-|---|---|---|---|---|
-| `session.requested` | Laravel | الطالب | إشعار بطلب الجلسة. | نعم في Session. |
-| `session.accepted` | Laravel | المعلم | إشعار قبول الطالب. | نعم. |
-| `session.rejected` | Laravel | المعلم | إشعار رفض الطالب. | نعم. |
-| `session.state_changed` | Laravel | الطرفان | تحديث حالة الجلسة. | نعم. |
-| `webrtc.offer` | الطرف الذي يبدأ | الطرف الآخر | SDP Offer. | لا، مؤقت. |
-| `webrtc.answer` | الطرف الآخر | الطرف الذي بدأ | SDP Answer. | لا، مؤقت. |
-| `webrtc.ice_candidate` | كلا الطرفين | الطرف الآخر | ICE Candidate. | لا، مؤقت. |
-| `webrtc.renegotiate` | كلا الطرفين | الطرف الآخر | إعادة التفاوض. | لا، مؤقت. |
-| `mushaf.page_changed` | كلا الطرفين | الطرف الآخر | مزامنة الصفحة الحالية. | مسودة عند الحاجة. |
-| `mushaf.ayah_selected` | المعلم/الطالب | الطرف الآخر | مزامنة الآية المحددة. | عند ارتباطها بنطاق المهمة. |
-| `mistake.created` | المعلم/الطالب | الطرف الآخر | ظهور العلامة فورًا. | نعم عبر REST/Service. |
-| `mistake.updated` | المعلم/الطالب | الطرف الآخر | تحديث التصنيف أو الملاحظة. | نعم عبر REST/Service. |
-| `mistake.deleted` | المعلم/الطالب | الطرف الآخر | إزالة العلامة. | نعم عبر REST/Service. |
-| `guidance.request_repeat` | المعلم | الطالب | طلب إعادة آية أو كلمة. | اختياري في التقرير. |
-| `task.changed` | المعلم | الطالب | تغيير نوع المهمة أو نطاقها. | نعم إذا أصبح رسميًا. |
-| `report.updated` | Laravel | الطرفان | وجود تغيير في التقرير. | نعم. |
-| `session.ended` | Laravel | الطرفان | انتهاء الاتصال المنطقي. | نعم. |
+| النوع | المصدر | الوجهة | التخزين |
+|---|---|---|---|
+| `session.requested` | Laravel | الطالب | حالة الجلسة الرسمية. |
+| `session.accepted` | Laravel | المعلم | حالة الجلسة الرسمية. |
+| `session.rejected` | Laravel | المعلم | حالة الجلسة الرسمية. |
+| `session.state_changed` | Laravel | الطرفان | الحالة الرسمية. |
+| `webrtc.offer` | الطرف البادئ | الطرف الآخر | تمرير مؤقت فقط. |
+| `webrtc.answer` | الطرف الآخر | الطرف البادئ | تمرير مؤقت فقط. |
+| `webrtc.ice_candidate` | كلا الطرفين | الطرف الآخر | تمرير مؤقت فقط، Host candidate فقط. |
+| `webrtc.renegotiate` | كلا الطرفين | الطرف الآخر | تمرير مؤقت فقط. |
+| `mushaf.page_changed` | كلا الطرفين | الطرف الآخر | P2P مؤقت. |
+| `mushaf.ayah_selected` | كلا الطرفين | الطرف الآخر | P2P مؤقت، ويحفظ فقط إن أصبح نطاقًا رسميًا. |
+| `mistake.created` | المعلم/الطالب | الطرف الآخر | عرض فوري ثم حفظ عبر REST. |
+| `mistake.updated` | المعلم/الطالب | الطرف الآخر | عرض فوري ثم حفظ عبر REST. |
+| `mistake.deleted` | المعلم/الطالب | الطرف الآخر | عرض فوري ثم حفظ عبر REST. |
+| `guidance.request_repeat` | المعلم | الطالب | اختياري في سجل الجلسة. |
+| `task.changed` | المعلم | الطالب | يحفظ عبر Service عند اعتماده. |
+| `report.updated` | Laravel | الطرفان | حالة التقرير الرسمية. |
+| `session.ended` | Laravel | الطرفان | حالة الجلسة الرسمية. |
+| `realtime.direct_connection_unavailable` | Laravel/العميل | الطرفان | حالة فشل الاتصال المباشر، دون تحويل إلى Relay. |
 
 ## رسائل WebRTC
 
@@ -59,6 +74,7 @@ private-live-session.{session_id}
   "message_id": "uuid",
   "session_id": "uuid",
   "sender_id": "uuid",
+  "recipient_id": "uuid",
   "sender_role": "teacher",
   "type": "webrtc.offer",
   "occurred_at": "2026-08-25T10:00:00Z",
@@ -76,6 +92,7 @@ private-live-session.{session_id}
   "message_id": "uuid",
   "session_id": "uuid",
   "sender_id": "uuid",
+  "recipient_id": "uuid",
   "sender_role": "student",
   "type": "webrtc.answer",
   "occurred_at": "2026-08-25T10:00:01Z",
@@ -93,11 +110,12 @@ private-live-session.{session_id}
   "message_id": "uuid",
   "session_id": "uuid",
   "sender_id": "uuid",
+  "recipient_id": "uuid",
   "sender_role": "student",
   "type": "webrtc.ice_candidate",
   "occurred_at": "2026-08-25T10:00:02Z",
   "payload": {
-    "candidate": "...",
+    "candidate": "candidate:... typ host",
     "sdp_mid": "0",
     "sdp_m_line_index": 0,
     "username_fragment": "..."
@@ -105,15 +123,16 @@ private-live-session.{session_id}
 }
 ```
 
-لا يفسر Laravel محتوى SDP أو ICE؛ يكتفي بالتحقق من هوية المرسل والجلسة وتمرير الرسالة إلى الطرف الآخر. تُعاد التفاوضات عند تغير الشبكة أو عودة الاتصال.
+يرفض Laravel أي Candidate من نوع `srflx` أو `relay` لأن سياسة المشروع P2P-only دون STUN/TURN. ولا يفسر Laravel SDP، بل يتحقق من الغلاف والصلاحية ويمرر الحمولة المؤقتة.
 
-## رسائل المصحف
+## رسائل المصحف التفاعلي
 
 ```json
 {
   "message_id": "uuid",
   "session_id": "uuid",
   "sender_id": "uuid",
+  "recipient_id": "uuid",
   "sender_role": "teacher",
   "type": "mistake.created",
   "occurred_at": "2026-08-25T10:02:00Z",
@@ -130,33 +149,45 @@ private-live-session.{session_id}
 }
 ```
 
-تعرض الواجهة العلامة فورًا من الرسالة اللحظية، ثم يرسل التطبيق عملية الحفظ إلى `POST /sessions/{sessionId}/tasks/{taskId}/mistakes`. إذا فشل REST، تبقى العملية في طابور محلي وتُعاد لاحقًا.
+يعرض العميل العلامة فورًا من DataChannel أو WebSocket عند الحاجة، ثم يرسل عملية الحفظ إلى `POST /sessions/{sessionId}/tasks/{taskId}/mistakes`. إذا فشل REST، يحفظ العميل العملية في مسودة محلية ويعيد إرسالها دون تكرار.
 
-## دورة الحالة
+## دورة الاتصال
 
 ```text
 requested
   -> accepted
   -> connecting
+  -> direct_negotiation
   -> connected
-  -> weak_connection
   -> reconnecting
   -> connected
+  -> direct_connection_unavailable
   -> ended
 ```
 
-يمكن الانتقال من `connecting` أو `connected` إلى `disconnected` عند الانقطاع. لا ينتقل التقرير إلى `completed` إلا عبر REST بعد اعتماد المعلم. إنهاء WebRTC أو مغادرة الطرف لا يساوي اعتماد التقرير.
+لا تعني `direct_connection_unavailable` أن Laravel سيحمل الوسائط أو أن النظام سيستخدم Relay. تعني فقط فشل الاتصال المباشر، ويمكن إعادة المحاولة أو إنهاء الجلسة.
 
-## أحداث الاتصال الخادمية
+## تنفيذ Laravel الداخلي
 
-| الحدث | المصدر | سلوك العميل |
-|---|---|---|
-| `session.state_changed` | Laravel | تحديث شارة الحالة وإتاحة زر إعادة الاتصال عند اللزوم. |
-| `realtime.authorization_failed` | Laravel/Reverb | إغلاق القناة وطلب مصادقة جديدة. |
-| `realtime.peer_left` | Laravel أو العميل | إظهار تنبيه وحفظ المسودة. |
-| `realtime.sync_required` | Laravel | جلب الحالة الرسمية من REST وإعادة مزامنة المصحف. |
-| `realtime.token_expiring` | Laravel | تجديد الرمز قبل إعادة فتح القناة. |
+```text
+app/
+├── Console/Commands/Realtime/RunWebSocketServerCommand.php
+├── Realtime/WebSocket/WebSocketServer.php
+├── Realtime/WebSocket/ConnectionManager.php
+├── Realtime/WebSocket/FrameCodec.php
+├── Realtime/WebSocket/HandshakeService.php
+├── Realtime/Channels/LiveSessionChannelAuthorizer.php
+└── Realtime/Signaling/WebRtcSignalingService.php
+```
 
-## قاعدة الأمان
+تستقبل طبقة WebSocket الرسالة، تتحقق من القناة والطرفين، وتستدعي `WebRtcSignalingService`. لا تضع قواعد المجال داخل Frame Codec ولا داخل Controller ولا داخل Resource.
 
-لا يرسل العميل دور المستخدم أو صلاحياته بوصفها مصدر الحقيقة؛ يتحقق Laravel من الرمز والعلاقة بالجسلة. لا تُقبل أحداث `mistake.*` أو `report.*` إلا إذا كانت العملية مسموحة لحالة التقرير الحالية. لا توضع مفاتيح TURN الدائمة داخل التطبيق؛ يعيد Endpoint الإعدادات بيانات مؤقتة عند الحاجة.
+## قواعد الحفظ
+
+يحفظ Laravel فقط البيانات الرسمية: الجلسة، قبولها وإنهاؤها، نطاق المهمة، الأخطاء، التقييمات، الملاحظات، التقرير، الاعتمادات، وجدولة المتابعة. لا يحفظ الصوت أو الفيديو أو SDP أو ICE في السجل التعليمي.
+
+يستخدم كل تغيير رسمي `client_operation_id` أو `Idempotency-Key` لمنع التكرار عند إعادة الاتصال. يجب أن تكون عمليات الحفظ في Services ومعاملات ذرية عند ارتباط أكثر من Model.
+
+## الممنوعات
+
+يمنع نقل الصوت أو الفيديو إلى Laravel أو WebSocket، ويمنع تشغيل Media Server أو Relay أو Proxy، ويمنع استخدام STUN أو TURN، ويمنع Reverb وPusher وSoketi وSocket.IO وSIPSorcery وأي مكتبة خارجية لتنفيذ WebSocket أو WebRTC. كما يمنع فتح قناة عامة أو قبول رسالة لا يثبت Laravel أن مرسلها ومستقبلها طرفان في الجلسة.
