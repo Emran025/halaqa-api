@@ -2564,6 +2564,9 @@ components:
         previous_teacher_notes:
           type: [string, 'null']
           maxLength: 2000
+        stop_reasons:
+          type: [string, 'null']
+          maxLength: 2000
     AttendancePreferences:
       additionalProperties: false
       type: object
