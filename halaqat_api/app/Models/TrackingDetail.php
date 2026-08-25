@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TrackingDetail extends Model
 {
@@ -22,6 +23,11 @@ class TrackingDetail extends Model
     public function task(): BelongsTo
     {
         return $this->belongsTo(SessionTask::class, 'session_task_id');
+    }
+
+    public function mistakes(): HasMany
+    {
+        return $this->hasMany(Mistake::class, 'tracking_detail_id', 'uuid');
     }
 
     public function trackingType(): BelongsTo

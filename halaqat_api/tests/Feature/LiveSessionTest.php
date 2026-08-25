@@ -40,7 +40,27 @@ class LiveSessionTest extends TestCase
             ->assertCreated()->assertJsonPath('task.id', $taskId);
         $this->assertDatabaseCount('session_tasks', 1);
         $this->assertDatabaseCount('tracking_details', 1);
-        $base = '/api/v1/sessions/'.$response->json('session.id').'/tasks/'.$taskId;
+        $sessionId = $response->json('session.id');
+        $this->withToken($teacher['token'])->getJson('/api/v1/sessions/'.$sessionId.'/tasks')
+            ->assertOk()->assertJsonCount(1, 'tasks')->assertJsonPath('tasks.0.id', $taskId)->assertJsonMissingPath('data');
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->getJson('/api/v1/sessions/'.$sessionId.'/tasks/'.$taskId)
+            ->assertOk()->assertJsonPath('task.id', $taskId)->assertJsonMissingPath('data');
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->patchJson('/api/v1/sessions/'.$sessionId.'/tasks/'.$taskId, ['current_page' => 2, 'current_ayah_id' => 8])
+            ->assertOk()->assertJsonPath('task.id', $taskId);
+        $this->assertDatabaseHas('session_tasks', ['id' => $taskId, 'current_page' => 2, 'current_ayah_id' => 8]);
+        $draftPayload = ['client_operation_id' => (string) Str::uuid(), 'current_page' => 3, 'current_ayah_id' => 15];
+        $this->withToken($student['token'])->postJson('/api/v1/sessions/'.$sessionId.'/tasks/'.$taskId.'/save-draft', $draftPayload)
+            ->assertOk()->assertJsonPath('task.id', $taskId);
+        $this->withToken($student['token'])->postJson('/api/v1/sessions/'.$sessionId.'/tasks/'.$taskId.'/save-draft', $draftPayload)
+            ->assertOk()->assertJsonPath('task.id', $taskId);
+        $this->assertDatabaseHas('session_tasks', ['id' => $taskId, 'current_page' => 3, 'current_ayah_id' => 15, 'last_draft_operation_id' => $draftPayload['client_operation_id']]);
+        app('auth')->forgetGuards();
+        $this->withToken($teacher['token'])->patchJson('/api/v1/sessions/'.$sessionId.'/tasks/'.$taskId, ['state' => 'in_progress', 'planned_amount' => 2])
+            ->assertOk()->assertJsonPath('task.state', 'in_progress');
+        $this->assertDatabaseMissing('session_tasks', ['id' => $taskId, 'started_at' => null]);
+        $base = '/api/v1/sessions/'.$sessionId.'/tasks/'.$taskId;
         $notePayload = ['body' => 'Read carefully', 'client_operation_id' => (string) Str::uuid()];
         $createdNote = $this->withToken($teacher['token'])->postJson($base.'/notes', $notePayload)
             ->assertCreated()->assertJsonPath('note.body', 'Read carefully')->assertJsonMissingPath('data');

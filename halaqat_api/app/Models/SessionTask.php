@@ -12,11 +12,11 @@ class SessionTask extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'session_id', 'client_operation_id', 'tracking_type_id', 'sequence_no', 'planned_from_unit_id', 'planned_to_unit_id', 'planned_amount', 'actual_amount', 'state', 'comment', 'score', 'gap', 'started_at', 'completed_at'];
+    protected $fillable = ['id', 'session_id', 'client_operation_id', 'tracking_type_id', 'sequence_no', 'planned_from_unit_id', 'planned_to_unit_id', 'start_page', 'start_ayah_id', 'end_page', 'end_ayah_id', 'current_page', 'current_ayah_id', 'last_draft_operation_id', 'planned_amount', 'actual_amount', 'state', 'comment', 'score', 'gap', 'started_at', 'completed_at'];
 
     protected function casts(): array
     {
-        return ['planned_amount' => 'float', 'actual_amount' => 'float', 'score' => 'integer', 'gap' => 'float', 'started_at' => 'datetime', 'completed_at' => 'datetime'];
+        return ['start_page' => 'integer', 'start_ayah_id' => 'integer', 'end_page' => 'integer', 'end_ayah_id' => 'integer', 'current_page' => 'integer', 'current_ayah_id' => 'integer', 'planned_amount' => 'float', 'actual_amount' => 'float', 'score' => 'integer', 'gap' => 'float', 'started_at' => 'datetime', 'completed_at' => 'datetime'];
     }
 
     public function session(): BelongsTo

@@ -40,7 +40,7 @@ class LiveSessionService
                 throw new ApiConflictException('The tracking type is not available.', 'tracking_type_not_found', 'task_type', $data['task_type']);
             }
 
-            $task = SessionTask::create(['id' => (string) Str::uuid(), 'session_id' => $session->id, 'client_operation_id' => $data['client_operation_id'], 'tracking_type_id' => $typeId, 'sequence_no' => $sequence, 'planned_amount' => $data['planned_amount'] ?? null, 'planned_from_unit_id' => $data['planned_from_unit_id'] ?? null, 'planned_to_unit_id' => $data['planned_to_unit_id'] ?? null, 'state' => 'draft']);
+            $task = SessionTask::create(['id' => (string) Str::uuid(), 'session_id' => $session->id, 'client_operation_id' => $data['client_operation_id'], 'tracking_type_id' => $typeId, 'sequence_no' => $sequence, 'planned_amount' => $data['planned_amount'] ?? null, 'planned_from_unit_id' => $data['planned_from_unit_id'] ?? null, 'planned_to_unit_id' => $data['planned_to_unit_id'] ?? null, 'start_page' => $data['start_page'] ?? null, 'start_ayah_id' => $data['start_ayah_id'] ?? null, 'end_page' => $data['end_page'] ?? null, 'end_ayah_id' => $data['end_ayah_id'] ?? null, 'state' => 'draft']);
             $membership = HalaqaMembership::query()->where('halaqa_id', $session->halaqa_id)->where('student_id', $session->student_id)->where('status', 'active')->first();
             if ($membership === null) {
                 throw new ApiConflictException('An active membership is required for tracking this task.', 'membership_required', 'session', $session->id);
