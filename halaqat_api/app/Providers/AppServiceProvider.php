@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Mistake;
+use App\Models\SessionTask;
 use App\Models\User;
+use App\Policies\MistakePolicy;
+use App\Policies\SessionTaskPolicy;
 use App\Policies\StudentLearningPolicy;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
@@ -24,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(User::class, StudentLearningPolicy::class);
+        Gate::policy(Mistake::class, MistakePolicy::class);
+        Gate::policy(SessionTask::class, SessionTaskPolicy::class);
         JsonResource::withoutWrapping();
     }
 }

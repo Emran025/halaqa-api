@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SessionTask extends Model
 {
@@ -11,7 +12,7 @@ class SessionTask extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'session_id', 'tracking_type_id', 'sequence_no', 'planned_from_unit_id', 'planned_to_unit_id', 'planned_amount', 'actual_amount', 'state', 'comment', 'score', 'gap', 'started_at', 'completed_at'];
+    protected $fillable = ['id', 'session_id', 'client_operation_id', 'tracking_type_id', 'sequence_no', 'planned_from_unit_id', 'planned_to_unit_id', 'planned_amount', 'actual_amount', 'state', 'comment', 'score', 'gap', 'started_at', 'completed_at'];
 
     protected function casts(): array
     {
@@ -21,6 +22,11 @@ class SessionTask extends Model
     public function session(): BelongsTo
     {
         return $this->belongsTo(LiveSession::class, 'session_id');
+    }
+
+    public function trackingDetail(): HasOne
+    {
+        return $this->hasOne(TrackingDetail::class, 'session_task_id');
     }
 
     public function trackingType(): BelongsTo

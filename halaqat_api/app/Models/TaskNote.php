@@ -14,7 +14,7 @@ class TaskNote extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'session_task_id', 'author_id', 'note', 'ayah_id', 'edition_id', 'word_index'];
+    protected $fillable = ['id', 'session_task_id', 'author_id', 'note', 'client_operation_id', 'ayah_id', 'edition_id', 'word_index'];
 
     public function task(): BelongsTo
     {

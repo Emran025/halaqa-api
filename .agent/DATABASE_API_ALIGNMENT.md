@@ -42,7 +42,7 @@
 | سجل اليوم | `daily_trackings` | `Tracking`, `TrackingCollectionResponse` | سجل الحضور والمتابعة |
 | تفاصيل المتابعة | `tracking_details` | `TrackingDetail` | كمية الإنجاز والدرجة والفجوة |
 | أنواع الخطأ | `mistake_types` | `MistakeType` | `none`, `memory`, `grammar`, `pronunciation`, `timing`، وتستخدم في السجل بواسطة `mistake_type_id`. |
-| الخطأ | `mistakes` | `CreateMistakeInput`, `UpdateMistakeInput`, `Mistake` | إنشاء وتعديل وحذف منطقي وعرض فوري، مع `tracking_detail_id` المشتق من مسار المهمة، و`edition_id` و`ayah_id` و`word_index` و`mistake_type_id`؛ تمنع Service التكرار النشط بواسطة المفتاح المركب. |
+| الخطأ | `mistakes` | `CreateMistakeInput`, `UpdateMistakeInput`, `Mistake` | GET/POST/PATCH/DELETE للمهمة؛ يشتق `tracking_detail_id` من التفصيل الذي تنشئه المهمة، ويتحقق من الإصدار الافتراضي والآية/الصفحة، ويمنع التكرار النشط وretry عبر مفاتيح فريدة. |
 
 ## الجلسات والتقارير
 
@@ -50,9 +50,9 @@
 |---|---|---|---|---|
 | الجلسة | `live_sessions` | `CreateSessionInput`, `Session`, `SessionState` | إنشاء وقبول ورفض ومغادرة وإنهاء وإعادة اتصال، مع فرض `direct_p2p_only = TRUE`. | `LiveSessionPolicy`, `CreateLiveSessionService`, `EndLiveSessionService` |
 | حالة المصحف الرسمية للجلسة | `session_mushaf_states` | `MushafState`, `UpdateMushafStateInput`, `MushafStateResponse` | استعادة وحفظ الإصدار والصفحة والآية ونطاق التلاوة؛ المؤشر اللحظي لا يصبح رسميًا إلا عبر هذا المسار | `SessionMushafStatePolicy`, `SaveSessionMushafStateService` |
-| مهمة الجلسة | `session_tasks` | `SessionTask`, `CreateTaskInput`, `UpdateTaskInput` | إنشاء وتحديث وإكمال المهمة؛ يعرض `planned_from_unit_id` و`planned_to_unit_id`، ويعرض `range` مشتقًا من `quran_range_units` عند طلب الإسقاط التفصيلي | `SessionTaskService` |
-| الملاحظة | `task_notes` | `CreateNoteInput`, `Note` | إضافة وتعديل وحذف الملاحظة | `TaskNotePolicy`, `TaskNoteService` |
-| تقييم المعلم/الطالب | `task_evaluations` | `UpsertEvaluationInput`, `Evaluation` | حفظ تقييم كل طرف مرة واحدة | `TaskEvaluationPolicy`, `SaveEvaluationService` |
+| مهمة الجلسة | `session_tasks` | `SessionTask`, `CreateTaskInput`, `UpdateTaskInput` | إنشاء/تهيئة المهمة مع `client_operation_id` فريد وإنشاء `tracking_details` draft وسجل اليوم ذريًا؛ يعرض `planned_from_unit_id` و`planned_to_unit_id`، ويعرض `range` مشتقًا من `quran_range_units` عند طلب الإسقاط التفصيلي | `LiveSessionService`, `SessionTaskPolicy` |
+| الملاحظة | `task_notes` | `CreateNoteInput`, `UpdateNoteInput`, `Note` | GET/POST/PATCH/DELETE للملاحظة مع `client_operation_id` فريد وملكية المؤلف | `SessionTaskPolicy`, `SessionAnnotationService` |
+| تقييم المعلم/الطالب | `task_evaluations` | `UpsertEvaluationInput`, `Evaluation` | GET/PUT وتقييم واحد لكل طرف عبر `(session_task_id, evaluator_id)` | `SessionTaskPolicy`, `SessionAnnotationService` |
 | تقرير الجلسة | `session_reports` | `SessionReport`, `UpdateReportInput`, `StudentAcknowledgmentInput`, `ReopenReportInput` | تحديث واعتماد المعلم وتأكيد الطالب وإعادة الفتح | `FinalizeSessionReportService`, `AcknowledgeReportService` |
 | الإشارة | لا تخزين دائم | `RealtimeSession`, `RealtimeChannelAuthorization*` | تفويض قناة وتمرير offer/answer/host ICE | `WebRtcSignalingService` داخل Laravel |
 

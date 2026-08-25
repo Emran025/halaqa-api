@@ -25,12 +25,12 @@ CreateSessionRequest -> LiveSessionService -> LiveSession/HalaqaMembership/Track
 
 ## امتداد سجل المتابعة
 
-أضيفت جداول `daily_trackings` و`tracking_details` وModel طبقي لها، مع `GET /api/v1/students/{student}/trackings` وRequest وResource صريحين. يقرأ الطالب سجله، ويقرأه المعلم المرتبط بعضوية فعالة فقط؛ لا يكفي حساب معلم غير مرتبط. عمليات إنشاء وتعديل تفاصيل الحضور والتفصيل الكامل ستضاف مع مسارات العقد الأخرى في دورة لاحقة قبل اعتبار التتبع مكتملًا.
+أضيفت جداول `daily_trackings` و`tracking_details` وModel طبقي لها، مع `GET /api/v1/students/{student}/trackings` وRequest وResource صريحين. عند إنشاء مهمة جلسة تُنشئ الخدمة تفصيل تتبع draft وسجل اليوم بشكل ذري، مع unique على `session_task_id`، ليكون التفصيل الأب الرسمي للأخطاء. يقرأ الطالب سجله، ويقرأه المعلم المرتبط بعضوية فعالة فقط؛ لا يكفي حساب معلم غير مرتبط. ما زالت عمليات إكمال المهمة وتحديث الحضور التفصيلية خارج هذه الشريحة.
 
 ## امتداد تخزين الأخطاء والملاحظات والتقييمات
 
-أضيفت جداول `mistakes`, `task_notes`, و`task_evaluations` مع نماذج Soft Delete للأخطاء والملاحظات وقيد تقييم واحد لكل مقيّم ومهمة. هذا Commit يثبت طبقة التخزين والعلاقات فقط؛ لا يُعتبر API الأخطاء/الملاحظات/التقييم مكتملًا حتى تُضاف Requests وResources وPolicies وServices ومساراتها واختبارات HTTP الخاصة بها.
+أضيفت جداول `mistakes`, `task_notes`, و`task_evaluations` مع نماذج Soft Delete للأخطاء والملاحظات، وcomposite Quran FKs، وclient_operation_id فريد للأخطاء والملاحظات، وقيد تقييم واحد لكل مقيّم ومهمة. اكتملت مسارات أخطاء المهمة GET/POST/PATCH/DELETE، ومسارات الملاحظات GET/POST/PATCH/DELETE، ومسارات التقييم GET/PUT، مع Requests وResources وPolicies وSessionAnnotationService واختبارات HTTP للملكية والتكرار والنطاقات والحذف المنطقي. لا تزال قائمة أخطاء الطالب التاريخية مرتبطة بمسار القراءة السابق، ولا تُعد تقارير الجلسة أو حالات المهمة المتقدمة مكتملة بهذه الشريحة.
 
 ## قائمة أخطاء الطالب
 
-أضيف `GET /api/v1/students/{student}/mistakes` مع `MistakeType` و`MistakeCollectionResource` وتطبيق `StudentLearningPolicy`. يعرض السجلات النشطة فقط ويقصر المعلم على الطالب ذي العضوية الفعالة. لم تُدَّعَ اكتمالية CRUD للأخطاء في هذا التغيير؛ عمليات الإنشاء والتعديل والحذف المرتبطة بتفصيل المهمة ستُنفذ مع Policy وService وIdempotency في دورة لاحقة.
+أضيف `GET /api/v1/students/{student}/mistakes` مع `MistakeType` و`MistakeCollectionResource` وتطبيق `StudentLearningPolicy`. يعرض السجلات النشطة فقط ويقصر المعلم على الطالب ذي العضوية الفعالة. وأضيف CRUD الأخطاء المرتبطة بمهمة الجلسة مع `MistakePolicy` وService وidempotency، والتحقق من الإصدار الافتراضي والآية والصفحة، والحذف المنطقي. ما زالت التحديثات الجماعية والتقرير النهائي خارج هذه الشريحة.

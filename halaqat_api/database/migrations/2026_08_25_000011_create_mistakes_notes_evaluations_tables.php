@@ -8,6 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::create('mistake_types', function (Blueprint $table): void {
+            $table->unsignedTinyInteger('id')->primary();
+            $table->string('code', 30)->unique();
+            $table->string('label_ar', 100);
+            $table->string('label_en', 100);
+            $table->unsignedTinyInteger('sort_order');
+        });
         Schema::create('mistakes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('tracking_detail_id');
@@ -58,5 +65,6 @@ return new class extends Migration
         Schema::dropIfExists('task_evaluations');
         Schema::dropIfExists('task_notes');
         Schema::dropIfExists('mistakes');
+        Schema::dropIfExists('mistake_types');
     }
 };

@@ -12,7 +12,7 @@ class LiveSession extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'halaqa_id', 'teacher_id', 'student_id', 'follow_up_item_id', 'task_type_id', 'state', 'scheduled_at', 'requested_at', 'accepted_at', 'connected_at', 'ended_at', 'end_reason', 'direct_p2p_only'];
+    protected $fillable = ['id', 'halaqa_id', 'teacher_id', 'student_id', 'follow_up_item_id', 'task_type_id', 'state', 'scheduled_at', 'requested_at', 'accepted_at', 'connected_at', 'ended_at', 'end_reason', 'direct_p2p_only', 'client_operation_id'];
 
     protected function casts(): array
     {

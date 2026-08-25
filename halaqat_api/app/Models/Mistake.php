@@ -14,7 +14,7 @@ class Mistake extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'tracking_detail_id', 'ayah_id', 'edition_id', 'word_index', 'mistake_type_id', 'source_role', 'note', 'created_by_user_id'];
+    protected $fillable = ['id', 'tracking_detail_id', 'ayah_id', 'edition_id', 'word_index', 'mistake_type_id', 'source_role', 'note', 'client_operation_id', 'created_by_user_id'];
 
     public function detail(): BelongsTo
     {
