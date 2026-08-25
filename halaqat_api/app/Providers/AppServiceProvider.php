@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\LiveSession;
 use App\Models\Mistake;
 use App\Models\SessionTask;
 use App\Models\User;
+use App\Policies\LiveSessionPolicy;
 use App\Policies\MistakePolicy;
 use App\Policies\SessionTaskPolicy;
 use App\Policies\StudentLearningPolicy;
@@ -28,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(User::class, StudentLearningPolicy::class);
+        Gate::policy(LiveSession::class, LiveSessionPolicy::class);
         Gate::policy(Mistake::class, MistakePolicy::class);
         Gate::policy(SessionTask::class, SessionTaskPolicy::class);
         JsonResource::withoutWrapping();
