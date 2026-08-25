@@ -1,0 +1,127 @@
+<?php
+
+namespace App\Services\Registrations;
+
+use App\Exceptions\ApiConflictException;
+use App\Models\Halaqa;
+use App\Models\HalaqaMembership;
+use App\Models\RegistrationRequest;
+use App\Models\RegistrationRequestProfile;
+use App\Models\TeacherProfile;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class RegistrationService
+{
+    public function submit(User $student, array $data): RegistrationRequest
+    {
+        return DB::transaction(function () use ($student, $data): RegistrationRequest {
+            $existing = RegistrationRequest::query()->where('student_id', $student->id)->where('client_operation_id', $data['client_operation_id'])->first();
+            if ($existing !== null) {
+                return $existing->load(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile']);
+            }
+
+            $open = RegistrationRequest::query()->where('student_id', $student->id)->whereIn('state', ['pending', 'completion_requested'])->exists();
+            if ($open) {
+                throw new ApiConflictException('The student already has an open registration request.', 'open_registration_exists', 'user', $student->id);
+            }
+
+            $teacher = ! empty($data['teacher_code'])
+                ? TeacherProfile::query()->where('teacher_code', $data['teacher_code'])->firstOrFail()->user
+                : null;
+            $halaqa = ! empty($data['requested_halaqa_id']) ? Halaqa::query()->lockForUpdate()->findOrFail($data['requested_halaqa_id']) : null;
+            if ($halaqa && $teacher && $halaqa->teacher_id !== $teacher->id) {
+                throw new ApiConflictException('The requested halaqa does not belong to the selected teacher.', 'routing_target_mismatch', 'halaqa', $halaqa->id);
+            }
+            if ($halaqa && ($halaqa->gender !== $student->gender || $halaqa->country !== $student->country || $halaqa->status !== 'active')) {
+                throw new ApiConflictException('The requested halaqa is not available for this student.', 'halaqa_not_available', 'halaqa', $halaqa->id);
+            }
+
+            $request = RegistrationRequest::create([
+                'id' => (string) Str::uuid(), 'student_id' => $student->id, 'client_operation_id' => $data['client_operation_id'], 'teacher_id' => $teacher?->id,
+                'teacher_code_snapshot' => $data['teacher_code'] ?? null, 'requested_halaqa_id' => $halaqa?->id,
+                'routing_mode' => $teacher ? 'specific_teacher' : 'all_available_teachers', 'state' => 'pending',
+                'public_message' => $data['message'] ?? null, 'submitted_at' => now(),
+            ]);
+            $profile = $data['profile'];
+            $previous = $data['previous_memorization'] ?? [];
+            RegistrationRequestProfile::create([
+                'registration_request_id' => $request->id, 'gender' => $profile['gender'], 'birth_date' => $profile['birth_date'],
+                'country' => $profile['country'], 'city' => $profile['city'], 'residence' => $profile['residence'] ?? null,
+                'phone' => $profile['phone'], 'phone_zone' => $profile['phone_zone'], 'whatsapp_phone' => $profile['whatsapp_phone'] ?? null,
+                'whatsapp_zone' => $profile['whatsapp_zone'] ?? null, 'memorization_level' => $profile['memorization_level'] ?? null,
+                'review_level' => $profile['review_level'] ?? null, 'memorized_juz_count' => $previous['memorized_juz_count'] ?? null,
+                'previous_memorization_notes' => $previous['previous_teacher_notes'] ?? null, 'profile_bio' => $profile['bio'] ?? null,
+            ]);
+
+            return $request->load(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile']);
+        });
+    }
+
+    public function accept(RegistrationRequest $registrationRequest, User $teacher): RegistrationRequest
+    {
+        return DB::transaction(function () use ($registrationRequest, $teacher): RegistrationRequest {
+            $request = RegistrationRequest::query()->lockForUpdate()->with('requestedHalaqa')->findOrFail($registrationRequest->id);
+            if (! in_array($request->state, ['pending', 'completion_requested'], true)) {
+                throw new ApiConflictException('Only an open registration request can be accepted.', 'registration_state_conflict', 'registration_request', $request->id);
+            }
+            $halaqa = $request->requestedHalaqa;
+            if ($halaqa && $halaqa->teacher_id !== $teacher->id) {
+                throw new ApiConflictException('The teacher does not own the requested halaqa.', 'registration_target_forbidden', 'registration_request', $request->id);
+            }
+            if ($request->teacher_id !== null && $request->teacher_id !== $teacher->id) {
+                throw new ApiConflictException('The request is assigned to another teacher.', 'registration_target_forbidden', 'registration_request', $request->id);
+            }
+
+            $request->forceFill(['teacher_id' => $teacher->id, 'state' => 'accepted', 'decided_by_teacher_id' => $teacher->id, 'decided_at' => now(), 'accepted_at' => now()])->save();
+            if ($halaqa && ! HalaqaMembership::query()->where('student_id', $request->student_id)->where('status', 'active')->exists()) {
+                if ($halaqa->max_students !== null && $halaqa->activeMemberships()->count() >= $halaqa->max_students) {
+                    throw new ApiConflictException('The halaqa has reached its student capacity.', 'halaqa_capacity_reached', 'halaqa', $halaqa->id);
+                }
+                HalaqaMembership::create(['id' => (string) Str::uuid(), 'halaqa_id' => $halaqa->id, 'student_id' => $request->student_id, 'status' => 'active', 'joined_at' => now()]);
+            }
+
+            return $request->fresh(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile']);
+        });
+    }
+
+    public function reject(RegistrationRequest $registrationRequest, User $teacher, ?string $note): RegistrationRequest
+    {
+        return $this->decide($registrationRequest, $teacher, 'rejected', $note);
+    }
+
+    public function requestCompletion(RegistrationRequest $registrationRequest, User $teacher, array $data): RegistrationRequest
+    {
+        $note = 'Required fields: '.implode(', ', $data['required_fields']).(! empty($data['note']) ? '. '.$data['note'] : '');
+
+        return $this->decide($registrationRequest, $teacher, 'completion_requested', $note);
+    }
+
+    public function cancel(RegistrationRequest $registrationRequest): void
+    {
+        DB::transaction(function () use ($registrationRequest): void {
+            $request = RegistrationRequest::query()->lockForUpdate()->findOrFail($registrationRequest->id);
+            if (! in_array($request->state, ['pending', 'completion_requested'], true)) {
+                throw new ApiConflictException('Only an open registration request can be cancelled.', 'registration_state_conflict', 'registration_request', $request->id);
+            }
+            $request->update(['state' => 'cancelled', 'withdrawn_at' => now()]);
+        });
+    }
+
+    private function decide(RegistrationRequest $registrationRequest, User $teacher, string $state, ?string $note): RegistrationRequest
+    {
+        return DB::transaction(function () use ($registrationRequest, $teacher, $state, $note): RegistrationRequest {
+            $request = RegistrationRequest::query()->lockForUpdate()->with('requestedHalaqa')->findOrFail($registrationRequest->id);
+            if (! in_array($request->state, ['pending', 'completion_requested'], true)) {
+                throw new ApiConflictException('Only an open registration request can be decided.', 'registration_state_conflict', 'registration_request', $request->id);
+            }
+            if (($request->teacher_id !== null && $request->teacher_id !== $teacher->id) || ($request->requestedHalaqa && $request->requestedHalaqa->teacher_id !== $teacher->id)) {
+                throw new ApiConflictException('The teacher cannot decide this request.', 'registration_target_forbidden', 'registration_request', $request->id);
+            }
+            $request->update(['teacher_id' => $teacher->id, 'state' => $state, 'decision_note' => $note, 'decided_by_teacher_id' => $teacher->id, 'decided_at' => now()]);
+
+            return $request->fresh(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile']);
+        });
+    }
+}

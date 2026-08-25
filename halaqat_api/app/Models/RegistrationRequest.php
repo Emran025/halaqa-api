@@ -13,7 +13,7 @@ class RegistrationRequest extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'id', 'student_id', 'teacher_id', 'teacher_code_snapshot', 'requested_halaqa_id',
+        'id', 'student_id', 'client_operation_id', 'teacher_id', 'teacher_code_snapshot', 'requested_halaqa_id',
         'routing_mode', 'state', 'public_message', 'decision_note', 'decided_by_teacher_id',
         'submitted_at', 'decided_at', 'accepted_at', 'withdrawn_at',
     ];
@@ -37,6 +37,16 @@ class RegistrationRequest extends Model
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'teacher_id');
+    }
+
+    public function requestedHalaqa(): BelongsTo
+    {
+        return $this->belongsTo(Halaqa::class, 'requested_halaqa_id');
+    }
+
+    public function decidedByTeacher(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'decided_by_teacher_id');
     }
 
     public function profile(): HasOne

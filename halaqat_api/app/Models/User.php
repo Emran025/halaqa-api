@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -20,6 +21,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'id',
+        'client_operation_id',
         'role',
         'username',
         'name',
@@ -70,6 +72,11 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    public function halaqas(): HasMany
+    {
+        return $this->hasMany(Halaqa::class, 'teacher_id');
     }
 
     public function teacherProfile()

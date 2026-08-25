@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1\Auth;
 
 use App\Http\Requests\StrictFormRequest;
+use App\Models\User;
 use Illuminate\Validation\Rule;
 
 class RegisterStudentRequest extends StrictFormRequest
@@ -35,10 +36,12 @@ class RegisterStudentRequest extends StrictFormRequest
 
     public function rules(): array
     {
+        $existing = User::query()->where('client_operation_id', $this->input('client_operation_id'))->first();
+
         return [
             'name' => ['required', 'string', 'min:2', 'max:120'],
-            'username' => ['nullable', 'string', 'min:3', 'max:60', 'regex:/^[A-Za-z0-9_.-]+$/', Rule::unique('users', 'username')],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'username' => ['nullable', 'string', 'min:3', 'max:60', 'regex:/^[A-Za-z0-9_.-]+$/', Rule::unique('users', 'username')->ignore($existing?->id)],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($existing?->id)],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'password_confirmation' => ['required', 'string', 'min:8'],
             'gender' => ['required', Rule::in(['male', 'female'])],

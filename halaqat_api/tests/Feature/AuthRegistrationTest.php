@@ -37,6 +37,19 @@ class AuthRegistrationTest extends TestCase
         $this->assertDatabaseCount('personal_access_tokens', 1);
     }
 
+    public function test_repeating_student_client_operation_is_idempotent_for_account_creation(): void
+    {
+        $payload = $this->studentPayload();
+        $first = $this->postJson('/api/v1/auth/register/student', $payload)->assertCreated();
+        app('auth')->forgetGuards();
+        $second = $this->postJson('/api/v1/auth/register/student', $payload)->assertCreated();
+
+        $this->assertSame($first->json('user.id'), $second->json('user.id'));
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('registration_requests', 1);
+        $this->assertDatabaseCount('student_profiles', 1);
+    }
+
     public function test_teacher_registration_creates_profile_documents_and_explicit_response(): void
     {
         $payload = $this->teacherPayload();

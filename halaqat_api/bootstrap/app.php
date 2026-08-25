@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\ApiConflictException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -36,6 +37,26 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => 'The provided data is invalid.',
                 'field_errors' => $fieldErrors,
             ], 422);
+        });
+
+        $exceptions->render(function (ApiConflictException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'error' => [
+                    'code' => $exception->codeName,
+                    'message' => $exception->getMessage(),
+                    'details' => [
+                        'request_id' => null,
+                        'field_errors' => [],
+                        'resource' => $exception->resource,
+                        'resource_id' => $exception->resourceId,
+                        'retry_after_seconds' => null,
+                    ],
+                ],
+            ], 409);
         });
 
         $exceptions->render(function (AuthenticationException $exception, Request $request) {

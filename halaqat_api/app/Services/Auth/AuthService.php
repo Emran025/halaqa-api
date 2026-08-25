@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Exceptions\ApiConflictException;
 use App\Models\FollowUpPlan;
 use App\Models\FollowUpPlanDetail;
 use App\Models\RegistrationRequest;
@@ -24,6 +25,11 @@ class AuthService
     /** @return array{user: User, token: string, expires_at: string} */
     public function registerStudent(array $data): array
     {
+        $existing = $this->existingByOperation($data, 'student');
+        if ($existing !== null) {
+            return $this->issueToken($existing);
+        }
+
         $user = DB::transaction(function () use ($data): User {
             $user = $this->createUser($data, 'student');
             $previous = $data['previous_memorization'] ?? [];
@@ -51,6 +57,11 @@ class AuthService
     /** @return array{user: User, token: string, expires_at: string} */
     public function registerTeacher(array $data): array
     {
+        $existing = $this->existingByOperation($data, 'teacher');
+        if ($existing !== null) {
+            return $this->issueToken($existing);
+        }
+
         $user = DB::transaction(function () use ($data): User {
             $user = $this->createUser($data, 'teacher');
             $profile = TeacherProfile::create([
@@ -122,6 +133,7 @@ class AuthService
     {
         return User::create([
             'id' => (string) Str::uuid(),
+            'client_operation_id' => $data['client_operation_id'],
             'role' => $role,
             'username' => $data['username'] ?? null,
             'name' => $data['name'],
@@ -138,6 +150,23 @@ class AuthService
             'whatsapp_zone' => $data['whatsapp_zone'] ?? null,
             'status' => 'active',
         ]);
+    }
+
+    private function existingByOperation(array $data, string $role): ?User
+    {
+        $operationId = $data['client_operation_id'] ?? null;
+        if ($operationId === null) {
+            return null;
+        }
+
+        $existing = User::query()->where('client_operation_id', $operationId)->first();
+        if ($existing !== null && $existing->role !== $role) {
+            throw new ApiConflictException('The client operation id was already used for another account role.', 'client_operation_reused', 'user', $existing->id);
+        }
+
+        return $existing?->fresh($role === 'student'
+            ? ['studentProfile', 'studentProfile.availability', 'studentProfile.followUpPlan.details']
+            : ['teacherProfile', 'teacherProfile.documents']);
     }
 
     private function generateTeacherCode(): string
