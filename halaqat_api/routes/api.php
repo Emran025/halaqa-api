@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Auth\ChangePasswordController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\MeController;
 use App\Http\Controllers\Api\V1\Auth\RegisterStudentController;
 use App\Http\Controllers\Api\V1\Auth\RegisterTeacherController;
+use App\Http\Controllers\Api\V1\Auth\RequestPasswordResetController;
+use App\Http\Controllers\Api\V1\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\V1\Halaqas\CreateHalaqaController;
 use App\Http\Controllers\Api\V1\Halaqas\GetHalaqaController;
 use App\Http\Controllers\Api\V1\Halaqas\ListHalaqasController;
@@ -80,9 +83,12 @@ Route::prefix('v1')->group(function (): void {
         Route::post('register/student', RegisterStudentController::class);
         Route::post('register/teacher', RegisterTeacherController::class);
         Route::post('login', LoginController::class);
+        Route::post('password/forgot', RequestPasswordResetController::class);
+        Route::post('password/reset', ResetPasswordController::class);
 
         Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('logout', LogoutController::class);
+            Route::post('password/change', ChangePasswordController::class);
         });
     });
 
