@@ -24,11 +24,12 @@ description: Laravel architecture governance for AI agents. Use when creating, m
 3. اقرأ [references/canonical-tree.md](references/canonical-tree.md) وقارنها بالبنية الفعلية للمشروع.
 4. اقرأ [references/placement-rules.md](references/placement-rules.md) لتحديد مكان كل ملف.
 5. حدد حالات الاستخدام، المدخلات، المخرجات، الصلاحيات، وطول العملية قبل اختيار طبقة التنفيذ.
-6. اقرأ `references/realtime-and-webrtc.md` و`REALTIME_CONTRACT.md` عند أي عمل متعلق بالجلسات أو WebSocket أو WebRTC أو المصحف اللحظي.
-7. طبّق التعديل بأقل تغيير ممكن، ولا تخلط نمطًا معماريًا جديدًا مع نمط قائم دون سبب موثق.
-8. شغّل [scripts/validate_laravel_tree.py](scripts/validate_laravel_tree.py) أو طبّق قائمة التحقق في [references/validation-checklist.md](references/validation-checklist.md).
-9. افحص عدم وجود طرف ثالث أو Media Server أو Relay أو STUN/TURN في أي تعديل لحظي.
-10. اعرض في النتيجة الملفات التي أُنشئت أو عُدلت، وسبب وضع كل ملف في مكانه.
+6. عند لمس قاعدة البيانات، طابق التغيير مع `DATABASE_SCHEMA_CONTRACT.md` وحدد أثره على OpenAPI وResources وPolicies.
+7. اقرأ `references/realtime-and-webrtc.md` و`REALTIME_CONTRACT.md` عند أي عمل متعلق بالجلسات أو WebSocket أو WebRTC أو المصحف اللحظي.
+8. طبّق التعديل بأقل تغيير ممكن، ولا تخلط نمطًا معماريًا جديدًا مع نمط قائم دون سبب موثق.
+9. شغّل [scripts/validate_laravel_tree.py](scripts/validate_laravel_tree.py) أو طبّق قائمة التحقق في [references/validation-checklist.md](references/validation-checklist.md).
+10. افحص عدم وجود طرف ثالث أو Media Server أو Relay أو STUN/TURN في أي تعديل لحظي.
+11. اعرض في النتيجة الملفات التي أُنشئت أو عُدلت، وسبب وضع كل ملف في مكانه.
 
 إذا تعارضت البنية المرجعية مع بنية المشروع القائمة، فالأولوية للتوافق مع المشروع القائم بشرط تسجيل الاستثناء وعدم إنشاء نمطين متنافسين داخل الوحدة نفسها.
 
@@ -133,6 +134,8 @@ description: Laravel architecture governance for AI agents. Use when creating, m
 اقرأ الملفات المرجعية بحسب الحاجة:
 
 - استخدم [PROJECT_ARCHITECTURE_POLICY.md](PROJECT_ARCHITECTURE_POLICY.md) كمرجع أعلى لنطاق النظام وقرارات Laravel-only وP2P-only.
+- استخدم [DATABASE_SCHEMA_CONTRACT.md](DATABASE_SCHEMA_CONTRACT.md) قبل إنشاء أو تعديل Model أو Migration أو علاقة تخزين.
+- استخدم [DATABASE_API_ALIGNMENT.md](DATABASE_API_ALIGNMENT.md) عند تغيير حقل أو Resource أو Endpoint للتأكد من تتبع البيانات بين API وMySQL.
 - استخدم [references/canonical-tree.md](references/canonical-tree.md) عند إنشاء أو نقل ملفات.
 - استخدم [references/placement-rules.md](references/placement-rules.md) عند اختيار الطبقة المناسبة.
 - استخدم [references/realtime-and-webrtc.md](references/realtime-and-webrtc.md) عند بناء WebSocket أو WebRTC أو مزامنة المصحف.

@@ -56,11 +56,13 @@ Route
 |---:|---|---|
 | 1 | `PROJECT_ARCHITECTURE_POLICY.md` | القرارات غير القابلة للتفاوض ونطاق المشروع. |
 | 2 | `openapi.yaml` | عقد REST API والطلبات والاستجابات. |
-| 3 | `REALTIME_CONTRACT.md` | عقد WebSocket وWebRTC P2P. |
-| 4 | `API_FUNCTIONS_CATALOG.md` | فهرس الوظائف والمسارات والصلاحيات. |
-| 5 | `references/canonical-tree.md` | الشجرة المعيارية للمجلدات. |
-| 6 | `references/placement-rules.md` | قواعد توزيع المسؤوليات. |
-| 7 | `references/validation-checklist.md` | شروط المراجعة والرفض. |
+| 3 | `DATABASE_SCHEMA_CONTRACT.md` و`database_schema.sql` | عقد MySQL وقاموس الحقول والعلاقات والقيود. |
+| 4 | `DATABASE_API_ALIGNMENT.md` | مواءمة الجداول مع مخططات OpenAPI وعمليات Laravel. |
+| 5 | `REALTIME_CONTRACT.md` | عقد WebSocket وWebRTC P2P. |
+| 6 | `API_FUNCTIONS_CATALOG.md` | فهرس الوظائف والمسارات والصلاحيات. |
+| 7 | `references/canonical-tree.md` | الشجرة المعيارية للمجلدات. |
+| 8 | `references/placement-rules.md` | قواعد توزيع المسؤوليات. |
+| 9 | `references/validation-checklist.md` | شروط المراجعة والرفض. |
 
 ## قاعدة التغيير
 

@@ -3231,7 +3231,8 @@ components:
           type: [integer, 'null']
     MistakeType:
       type: string
-      enum: [unclassified, forgetfulness, grammar, articulation, stopping_and_starting]
+      description: قيم مطابقة لـMistakeType في كود Shafeea وعقد MySQL.
+      enum: [none, memory, grammar, pronunciation, timing]
     MistakeSource:
       type: string
       enum: [teacher, student]
@@ -3247,7 +3248,7 @@ components:
           maximum: 604
         word_index:
           type: integer
-          minimum: 0
+          minimum: 1
         mistake_type:
           $ref: '#/components/schemas/MistakeType'
         note:
