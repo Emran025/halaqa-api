@@ -91,6 +91,11 @@ def validate(root: Path) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate common Laravel architecture conventions.")
     parser.add_argument("project", nargs="?", default=".", help="Laravel project directory")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Treat review findings as failures in CI.",
+    )
     args = parser.parse_args()
     root = Path(args.project).resolve()
     findings = validate(root)
@@ -101,7 +106,9 @@ def main() -> int:
 
     for finding in findings:
         print(finding)
-    return 1 if any(item.startswith("ERROR") for item in findings) else 0
+    has_error = any(item.startswith("ERROR") for item in findings)
+    has_review = any(item.startswith("REVIEW") for item in findings)
+    return 1 if has_error or (args.strict and has_review) else 0
 
 
 if __name__ == "__main__":
