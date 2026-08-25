@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\Memberships\RemoveStudentFromHalaqaController;
 use App\Http\Controllers\Api\V1\Memberships\UpdateMembershipController;
 use App\Http\Controllers\Api\V1\Progress\GetStudentAvailabilityController;
 use App\Http\Controllers\Api\V1\Progress\GetStudentFollowUpPlanController;
+use App\Http\Controllers\Api\V1\Progress\ListStudentMistakesController;
 use App\Http\Controllers\Api\V1\Progress\ListStudentTrackingsController;
 use App\Http\Controllers\Api\V1\Progress\UpdateStudentAvailabilityController;
 use App\Http\Controllers\Api\V1\Progress\UpdateStudentFollowUpPlanController;
@@ -73,6 +74,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('students/{student}/follow-up-plan', GetStudentFollowUpPlanController::class);
         Route::put('students/{student}/follow-up-plan', UpdateStudentFollowUpPlanController::class);
         Route::get('students/{student}/trackings', ListStudentTrackingsController::class);
+        Route::get('students/{student}/mistakes', ListStudentMistakesController::class);
         Route::model('student', User::class);
         Route::get('quran/surahs', [QuranController::class, 'surahs']);
         Route::get('quran/pages/{pageNumber}', [QuranController::class, 'page'])->whereNumber('pageNumber');

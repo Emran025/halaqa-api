@@ -30,3 +30,7 @@ CreateSessionRequest -> LiveSessionService -> LiveSession/HalaqaMembership/Track
 ## امتداد تخزين الأخطاء والملاحظات والتقييمات
 
 أضيفت جداول `mistakes`, `task_notes`, و`task_evaluations` مع نماذج Soft Delete للأخطاء والملاحظات وقيد تقييم واحد لكل مقيّم ومهمة. هذا Commit يثبت طبقة التخزين والعلاقات فقط؛ لا يُعتبر API الأخطاء/الملاحظات/التقييم مكتملًا حتى تُضاف Requests وResources وPolicies وServices ومساراتها واختبارات HTTP الخاصة بها.
+
+## قائمة أخطاء الطالب
+
+أضيف `GET /api/v1/students/{student}/mistakes` مع `MistakeType` و`MistakeCollectionResource` وتطبيق `StudentLearningPolicy`. يعرض السجلات النشطة فقط ويقصر المعلم على الطالب ذي العضوية الفعالة. لم تُدَّعَ اكتمالية CRUD للأخطاء في هذا التغيير؛ عمليات الإنشاء والتعديل والحذف المرتبطة بتفصيل المهمة ستُنفذ مع Policy وService وIdempotency في دورة لاحقة.
