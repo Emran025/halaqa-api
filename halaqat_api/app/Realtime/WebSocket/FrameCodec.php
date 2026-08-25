@@ -28,6 +28,18 @@ class FrameCodec
     /** @return array{opcode:int,payload:string,consumed:int}|null */
     public function decode(string $buffer): ?array
     {
+        return $this->decodeFrame($buffer, true);
+    }
+
+    /** @return array{opcode:int,payload:string,consumed:int}|null */
+    public function decodeServerFrame(string $buffer): ?array
+    {
+        return $this->decodeFrame($buffer, false);
+    }
+
+    /** @return array{opcode:int,payload:string,consumed:int}|null */
+    private function decodeFrame(string $buffer, bool $requireMask): ?array
+    {
         $length = strlen($buffer);
         if ($length < 2) {
             return null;
@@ -39,8 +51,11 @@ class FrameCodec
         }
         $opcode = $first & 0x0F;
         $masked = ($second & 0x80) !== 0;
-        if (! $masked) {
+        if ($requireMask && ! $masked) {
             throw new RealtimeProtocolException('unmasked_client_frame', 'Client WebSocket frames must be masked.');
+        }
+        if (! $requireMask && $masked) {
+            throw new RealtimeProtocolException('masked_server_frame', 'Server WebSocket frames must not be masked.');
         }
         $payloadLength = $second & 0x7F;
         $offset = 2;
@@ -68,19 +83,23 @@ class FrameCodec
         if ($isControl && ($payloadLength > 125 || ($first & 0x80) === 0)) {
             throw new RealtimeProtocolException('invalid_control_frame', 'Control frames must be final and at most 125 bytes.');
         }
-        if ($length < $offset + 4 + $payloadLength) {
+        $maskLength = $masked ? 4 : 0;
+        if ($length < $offset + $maskLength + $payloadLength) {
             return null;
         }
-        $mask = substr($buffer, $offset, 4);
-        $payload = substr($buffer, $offset + 4, $payloadLength);
-        for ($index = 0; $index < $payloadLength; $index++) {
-            $payload[$index] = $payload[$index] ^ $mask[$index % 4];
+        $mask = $masked ? substr($buffer, $offset, 4) : '';
+        $payloadOffset = $offset + $maskLength;
+        $payload = substr($buffer, $payloadOffset, $payloadLength);
+        if ($masked) {
+            for ($index = 0; $index < $payloadLength; $index++) {
+                $payload[$index] = $payload[$index] ^ $mask[$index % 4];
+            }
         }
         if (! in_array($opcode, [0x1, 0x8, 0x9, 0xA], true)) {
             throw new RealtimeProtocolException('unsupported_frame_opcode', 'Only text and WebSocket control frames are supported.');
         }
 
-        return ['opcode' => $opcode, 'payload' => $payload, 'consumed' => $offset + 4 + $payloadLength];
+        return ['opcode' => $opcode, 'payload' => $payload, 'consumed' => $payloadOffset + $payloadLength];
     }
 
     private function encodeFrame(int $opcode, string $payload): string

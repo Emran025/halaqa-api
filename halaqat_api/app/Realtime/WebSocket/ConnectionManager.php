@@ -4,6 +4,7 @@ namespace App\Realtime\WebSocket;
 
 use App\Models\User;
 use RuntimeException;
+use Throwable;
 
 class ConnectionManager
 {
@@ -34,12 +35,36 @@ class ConnectionManager
         if ($connection === null) {
             return false;
         }
-        foreach ($this->connections as $candidate) {
-            if ($candidate['session_id'] === $connection['session_id'] && $candidate['user_id'] === $connection['recipient_id']) {
-                $this->writeAll($candidate['socket'], $codec->encodeText($payload));
 
+        return $this->sendToParticipant($connection['session_id'], $connection['recipient_id'], $payload, $codec);
+    }
+
+    public function hasParticipant(string $sessionId, string $userId): bool
+    {
+        foreach ($this->connections as $connection) {
+            if ($connection['session_id'] === $sessionId && $connection['user_id'] === $userId) {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    public function sendToParticipant(string $sessionId, string $userId, string $payload, FrameCodec $codec): bool
+    {
+        foreach ($this->connections as $connectionId => $candidate) {
+            if ($candidate['session_id'] !== $sessionId || $candidate['user_id'] !== $userId) {
+                continue;
+            }
+            try {
+                $this->writeAll($candidate['socket'], $codec->encodeText($payload));
+            } catch (Throwable) {
+                unset($this->connections[$connectionId]);
+
+                return false;
+            }
+
+            return true;
         }
 
         return false;

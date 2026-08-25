@@ -50,7 +50,8 @@
 
 | البيانات | جداول التخزين | مخططات OpenAPI | العمليات الرئيسية | Service/Policy |
 |---|---|---|---|---|
-| الجلسة | `live_sessions` | `CreateSessionInput`, `Session`, `SessionState` | إنشاء وقبول ورفض ومغادرة وإنهاء وإعادة اتصال، مع فرض `direct_p2p_only = TRUE`. | `LiveSessionPolicy`, `CreateLiveSessionService`, `EndLiveSessionService` |
+| الجلسة | `live_sessions` | `CreateSessionInput`, `Session`, `SessionState`, `DirectConnectionUnavailableInput` | إنشاء وقبول ورفض ومغادرة وإنهاء وإعادة اتصال، وتسجيل `direct_connection_unavailable` مع حقول آخر عملية، مع فرض `direct_p2p_only = TRUE`. | `LiveSessionPolicy`, `LiveSessionService`, `SessionTransitionService`, `RealtimeSessionService` |
+| رسالة realtime الرسمية | `realtime_outbox_messages` | أحداث server-originated في `REALTIME_CONTRACT.md` | حفظ pending بعد commit، dedupe حسب recipient/نوع الحدث/payload، وتسليمها بعد نجاح الكتابة فقط؛ لا تحفظ وسائط أو SDP/ICE. | `RealtimeOutboxPublisher`, `RealtimeOutboxDispatcher`, `RealtimeServerEventEnvelopeFactory` |
 | حالة المصحف الرسمية للجلسة | `session_mushaf_states` | `MushafState`, `UpdateMushafStateInput`, `MushafStateResponse` | استعادة وحفظ الإصدار والصفحة والآية ونطاق التلاوة؛ المؤشر اللحظي لا يصبح رسميًا إلا عبر هذا المسار | `SessionMushafStatePolicy`, `SaveSessionMushafStateService` |
 | مهمة الجلسة | `session_tasks` | `SessionTask`, `CreateTaskInput`, `UpdateTaskInput` | إنشاء/تهيئة المهمة مع `client_operation_id` فريد وإنشاء `tracking_details` draft وسجل اليوم ذريًا؛ يعرض `planned_from_unit_id` و`planned_to_unit_id`، ويعرض `range` مشتقًا من `quran_range_units` عند طلب الإسقاط التفصيلي | `LiveSessionService`, `SessionTaskPolicy` |
 | الملاحظة | `task_notes` | `CreateNoteInput`, `UpdateNoteInput`, `Note` | GET/POST/PATCH/DELETE للملاحظة مع `client_operation_id` فريد وملكية المؤلف | `SessionTaskPolicy`, `SessionAnnotationService` |
@@ -67,7 +68,7 @@
 | الحذف المنطقي | الأخطاء والوثائق والحسابات التي تحتاج تاريخًا تستخدم `deleted_at`. |
 | الخصوصية | Resource عام للمتقدم، وResource تفصيلي مشروط بـPolicy العلاقة بعد القبول. |
 | التزامن | Transactions داخل Services عند قبول التسجيل وإنشاء العضوية ونسخ Snapshot الخطة والتوافر. |
-| فشل P2P | تخزن حالة `direct_connection_unavailable` في `live_sessions` فقط، ولا ينشأ مسار Relay أو Media Server. |
+| فشل P2P | تخزن حالة `direct_connection_unavailable` وسببها وحقول retry في `live_sessions`، وينشر الحدث عبر outbox، ولا ينشأ مسار Relay أو Media Server. |
 
 ## قواعد المطابقة
 

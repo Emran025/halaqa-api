@@ -467,11 +467,15 @@ CREATE TABLE live_sessions (
     end_reason VARCHAR(500) NULL,
     direct_p2p_only BOOLEAN NOT NULL DEFAULT TRUE,
     client_operation_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    last_client_operation_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    last_operation_by_user_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    last_operation_type VARCHAR(40) NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     active_student_key TINYINT GENERATED ALWAYS AS (IF(state IN ('requested', 'accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected'), 1, NULL)) STORED,
     PRIMARY KEY (id),
     UNIQUE KEY uq_live_session_client_operation (client_operation_id),
+    UNIQUE KEY uq_live_sessions_last_operation (last_client_operation_id),
     UNIQUE KEY uq_live_session_active_student (student_id, active_student_key),
     KEY idx_live_sessions_teacher_state (teacher_id, state, scheduled_at),
     KEY idx_live_sessions_student_state (student_id, state, scheduled_at),
@@ -481,8 +485,30 @@ CREATE TABLE live_sessions (
     CONSTRAINT fk_live_session_student FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE RESTRICT,
     CONSTRAINT fk_live_session_follow_up FOREIGN KEY (follow_up_item_id) REFERENCES follow_up_items(id) ON DELETE SET NULL,
     CONSTRAINT fk_live_session_task_type FOREIGN KEY (task_type_id) REFERENCES tracking_types(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_live_session_last_operation_user FOREIGN KEY (last_operation_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
     CONSTRAINT chk_live_session_state CHECK (state IN ('requested', 'accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected', 'direct_connection_unavailable', 'ended', 'cancelled', 'rejected')),
     CONSTRAINT chk_live_session_p2p CHECK (direct_p2p_only = TRUE)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE realtime_outbox_messages (
+    id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    session_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    recipient_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    event_type VARCHAR(80) NOT NULL,
+    dedupe_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    payload JSON NOT NULL,
+    attempts INT UNSIGNED NOT NULL DEFAULT 0,
+    last_attempted_at DATETIME NULL,
+    delivered_at DATETIME NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_realtime_outbox_dedupe_key (dedupe_key),
+    KEY idx_realtime_outbox_pending (delivered_at, created_at),
+    KEY idx_realtime_outbox_session_recipient (session_id, recipient_id, created_at),
+    CONSTRAINT fk_realtime_outbox_session FOREIGN KEY (session_id) REFERENCES live_sessions(id) ON DELETE CASCADE,
+    CONSTRAINT fk_realtime_outbox_recipient FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT chk_realtime_outbox_event_type CHECK (event_type IN ('session.requested', 'session.accepted', 'session.rejected', 'session.state_changed', 'session.ended', 'report.updated', 'realtime.direct_connection_unavailable'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE session_mushaf_states (

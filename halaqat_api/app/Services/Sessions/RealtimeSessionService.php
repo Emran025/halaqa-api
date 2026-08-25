@@ -2,9 +2,11 @@
 
 namespace App\Services\Sessions;
 
+use App\Events\LiveSession\LiveSessionRealtimeEvent;
 use App\Exceptions\ApiConflictException;
 use App\Models\LiveSession;
 use App\Models\User;
+use App\Realtime\RealtimeEventTypes;
 use Illuminate\Support\Facades\DB;
 
 class RealtimeSessionService
@@ -16,16 +18,18 @@ class RealtimeSessionService
 
     public function reconnect(LiveSession $session): array
     {
-        DB::transaction(function () use ($session): void {
+        $updated = DB::transaction(function () use ($session): LiveSession {
             $locked = LiveSession::query()->whereKey($session->id)->lockForUpdate()->firstOrFail();
             if (! in_array($locked->state, ['accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected', 'direct_connection_unavailable'], true)) {
                 throw new ApiConflictException('The session cannot start a reconnection attempt from its current state.', 'invalid_reconnect_state', 'session', $session->id);
             }
             $locked->update(['state' => 'reconnecting']);
-            $session->setRawAttributes($locked->fresh()->getAttributes());
-        });
 
-        return $this->configurationFor($session->fresh());
+            return $locked->fresh(['teacher', 'student', 'taskType']);
+        });
+        event(new LiveSessionRealtimeEvent($updated, RealtimeEventTypes::SESSION_STATE_CHANGED));
+
+        return $this->configurationFor($updated);
     }
 
     public function authorizeChannel(User $actor, string $sessionId, string $channelName): array

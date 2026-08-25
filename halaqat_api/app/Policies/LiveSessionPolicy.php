@@ -57,6 +57,11 @@ class LiveSessionPolicy
         return $this->isParticipant($user, $session) && ! in_array($session->state, ['requested', 'cancelled', 'rejected', 'ended'], true);
     }
 
+    public function markDirectConnectionUnavailable(User $user, LiveSession $session): bool
+    {
+        return $this->isParticipant($user, $session) && in_array($session->state, ['accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected', 'direct_connection_unavailable'], true);
+    }
+
     private function isParticipant(User $user, LiveSession $session): bool
     {
         return $session->teacher_id === $user->id || $session->student_id === $user->id;

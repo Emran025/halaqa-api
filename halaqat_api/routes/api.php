@@ -55,6 +55,7 @@ use App\Http\Controllers\Api\V1\Sessions\LeaveSessionController;
 use App\Http\Controllers\Api\V1\Sessions\ListMistakesController;
 use App\Http\Controllers\Api\V1\Sessions\ListNotesController;
 use App\Http\Controllers\Api\V1\Sessions\ListTasksController;
+use App\Http\Controllers\Api\V1\Sessions\MarkDirectConnectionUnavailableController;
 use App\Http\Controllers\Api\V1\Sessions\ReconnectSessionController;
 use App\Http\Controllers\Api\V1\Sessions\RejectSessionController;
 use App\Http\Controllers\Api\V1\Sessions\SaveDraftController;
@@ -138,6 +139,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('sessions/{session}/reject', RejectSessionController::class);
         Route::post('sessions/{session}/leave', LeaveSessionController::class);
         Route::post('sessions/{session}/end', EndSessionController::class);
+        Route::post('sessions/{session}/direct-connection-unavailable', MarkDirectConnectionUnavailableController::class);
         Route::get('sessions/{session}/report', GetSessionReportController::class);
         Route::patch('sessions/{session}/report', UpdateSessionReportController::class);
         Route::post('sessions/{session}/report/teacher-approval', [SessionReportActionController::class, 'approve']);

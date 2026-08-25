@@ -19,6 +19,7 @@ class WebSocketServer
         private readonly WebRtcSignalingService $signaling,
         private readonly FrameCodec $codec,
         private readonly ConnectionManager $connections,
+        private readonly RealtimeOutboxDispatcher $outbox,
     ) {}
 
     public function run(string $host, int $port): void
@@ -38,8 +39,11 @@ class WebSocketServer
                 $write = null;
                 $except = null;
                 if (stream_select($read, $write, $except, 1) === false) {
+                    $this->dispatchOutbox();
+
                     continue;
                 }
+                $this->dispatchOutbox();
                 foreach ($read as $socket) {
                     if ($socket === $server) {
                         $this->accept($server);
@@ -150,6 +154,15 @@ class WebSocketServer
         $validated = $this->signaling->validate($this->clients[$connectionId]['user'], $message, $this->clients[$connectionId]['channel']);
         $encoded = json_encode($validated, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
         $this->connections->sendToRecipient($socket, $encoded, $this->codec);
+    }
+
+    private function dispatchOutbox(): void
+    {
+        try {
+            $this->outbox->dispatch();
+        } catch (Throwable) {
+            // A database polling failure must not terminate existing WebSocket connections.
+        }
     }
 
     private function closeWithProtocolError(int $connectionId, Throwable $exception): void

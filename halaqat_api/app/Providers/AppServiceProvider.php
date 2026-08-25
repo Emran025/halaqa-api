@@ -3,12 +3,16 @@
 namespace App\Providers;
 
 use App\Console\Commands\Realtime\RunWebSocketServerCommand;
+use App\Events\LiveSession\LiveSessionRealtimeEvent;
 use App\Events\Notifications\SessionEnded;
 use App\Events\Notifications\SessionReportApproved;
 use App\Events\Notifications\SessionScheduled;
+use App\Events\Reports\SessionReportRealtimeUpdated;
+use App\Listeners\LiveSession\PublishLiveSessionRealtimeEvent;
 use App\Listeners\Notifications\CreateSessionEndedNotifications;
 use App\Listeners\Notifications\CreateSessionReportReadyNotification;
 use App\Listeners\Notifications\CreateSessionScheduledNotification;
+use App\Listeners\Reports\PublishSessionReportRealtimeUpdated;
 use App\Models\FollowUpItem;
 use App\Models\LiveSession;
 use App\Models\Mistake;
@@ -43,6 +47,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Event::listen(LiveSessionRealtimeEvent::class, PublishLiveSessionRealtimeEvent::class);
+        Event::listen(SessionReportRealtimeUpdated::class, PublishSessionReportRealtimeUpdated::class);
         Event::listen(SessionScheduled::class, CreateSessionScheduledNotification::class);
         Event::listen(SessionEnded::class, CreateSessionEndedNotifications::class);
         Event::listen(SessionReportApproved::class, CreateSessionReportReadyNotification::class);

@@ -29,6 +29,7 @@ users
 ├── follow_up_plans ──< follow_up_plan_details ──< follow_up_items
 ├── live_sessions ──< session_mushaf_states
 ├── live_sessions ──< session_tasks ──< tracking_details ──< mistakes
+├── live_sessions ──< realtime_outbox_messages
 ├── daily_trackings ──< tracking_details
 ├── session_reports
 ├── task_notes
@@ -222,9 +223,15 @@ tracking_units ──< follow_up_plan_details, quran_range_units
 
 ### `live_sessions`
 
-يربط الحلقة والمعلم والطالب وعنصر المتابعة، ويخزن `task_type_id` وحالة الجلسة والجدولة وخطها الزمني. يفرض الحقل `direct_p2p_only = TRUE` داخل قاعدة البيانات، ويضاف إلى Policy تحقق أن المعلم والطالب طرفا الجلسة.
+يربط الحلقة والمعلم والطالب وعنصر المتابعة، ويخزن `task_type_id` وحالة الجلسة والجدولة وخطها الزمني. يفرض الحقل `direct_p2p_only = TRUE` داخل قاعدة البيانات، ويضاف إلى Policy تحقق أن المعلم والطالب طرفا الجلسة. تحفظ `last_client_operation_id` و`last_operation_by_user_id` و`last_operation_type` آخر انتقال رسمي قابل لإعادة المحاولة مع قيد unique على معرف العملية الأخيرة.
 
 حالات الجلسة هي `requested`, `accepted`, `connecting`, `direct_negotiation`, `connected`, `weak_connection`, `reconnecting`, `disconnected`, `direct_connection_unavailable`, `ended`, `cancelled`, و`rejected`.
+
+### `realtime_outbox_messages`
+
+يسجل رسائل server-originated الرسمية التي أنشأها Laravel بعد نجاح transaction، ويجعلها متاحة لخادم WebSocket الداخلي لتسليمها للطرف المقصود. يحتوي على `id` كمعرف الرسالة، و`session_id`، و`recipient_id`، و`event_type`، و`dedupe_key` الفريد، و`payload` JSON، و`delivered_at`، و`attempts`، و`last_attempted_at` والطوابع الزمنية. لا يسمح إلا بأنواع `session.requested`, `session.accepted`, `session.rejected`, `session.state_changed`, `session.ended`, `report.updated`, و`realtime.direct_connection_unavailable`. لا يحتوي payload على صوت أو فيديو أو SDP أو ICE، ولا يعد outbox مصدر الحقيقة؛ مصدر الحقيقة هو جدول الجلسة أو التقرير.
+
+يحمل خادم WebSocket الرسائل pending بترتيب الإنشاء، ويتحقق من أن `session_id` و`recipient_id` طرفان في الجلسة قبل الكتابة، ثم يحدد `delivered_at` بعد نجاح إرسال الإطار فقط. يبقى السجل pending عند توقف الخادم، وتستخدم هذه الشريحة خادم WebSocket داخليًا واحدًا لكل بيئة تشغيل؛ لا تدّعي claim موزعًا بين نسخ متعددة.
 
 ### `session_mushaf_states`
 

@@ -1321,6 +1321,33 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+  /sessions/{sessionId}/direct-connection-unavailable:
+    post:
+      tags: [Sessions, Realtime]
+      summary: تسجيل تعذر الاتصال المباشر
+      description: Marks the official session state as direct_connection_unavailable without introducing a mediated transport path.
+      operationId: markDirectConnectionUnavailable
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DirectConnectionUnavailableInput'
+      responses:
+        '200':
+          description: تم تسجيل فشل الاتصال المباشر دون إنهاء الجلسة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /sessions/{sessionId}/tasks:
     parameters:
       - $ref: '#/components/parameters/SessionId'
@@ -3309,6 +3336,20 @@ components:
     ReportState:
       type: string
       enum: [draft, pending_student_acknowledgment, completed, reopened]
+    DirectConnectionUnavailableInput:
+      additionalProperties: false
+      type: object
+      required: [reason, client_operation_id]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: سبب فشل الاتصال المباشر كما سجله الطرف الحالي.
+        client_operation_id:
+          type: string
+          format: uuid
+          description: معرف retry الآمن لهذه العملية.
     CreateSessionInput:
       additionalProperties: false
       type: object

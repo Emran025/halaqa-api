@@ -37,6 +37,50 @@ class SessionTransitionTest extends TestCase
         $this->assertDatabaseHas('live_sessions', ['id' => $sessionId, 'state' => 'rejected', 'end_reason' => 'Not available today']);
     }
 
+    public function test_participant_can_mark_direct_connection_unavailable_and_retry_without_duplicate_event(): void
+    {
+        [$teacher, $student, $sessionId] = $this->createSession();
+        $operationId = (string) Str::uuid();
+
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->postJson('/api/v1/sessions/'.$sessionId.'/accept')->assertOk();
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->postJson('/api/v1/sessions/'.$sessionId.'/direct-connection-unavailable', ['reason' => 'Direct negotiation timed out', 'client_operation_id' => $operationId])
+            ->assertOk()->assertJsonPath('session.state', 'direct_connection_unavailable');
+        $this->assertDatabaseHas('live_sessions', ['id' => $sessionId, 'state' => 'direct_connection_unavailable', 'last_client_operation_id' => $operationId, 'last_operation_type' => 'direct_connection_unavailable']);
+        $this->assertDatabaseCount('realtime_outbox_messages', 4);
+        $this->assertDatabaseHas('realtime_outbox_messages', ['session_id' => $sessionId, 'event_type' => 'session.requested', 'recipient_id' => $student['user']['id']]);
+        $this->assertDatabaseMissing('realtime_outbox_messages', ['session_id' => $sessionId, 'event_type' => 'session.requested', 'recipient_id' => $teacher['user']['id']]);
+
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->postJson('/api/v1/sessions/'.$sessionId.'/direct-connection-unavailable', ['reason' => 'Direct negotiation timed out', 'client_operation_id' => $operationId])
+            ->assertOk()->assertJsonPath('session.state', 'direct_connection_unavailable');
+        $this->assertDatabaseCount('realtime_outbox_messages', 4);
+
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->postJson('/api/v1/sessions/'.$sessionId.'/reconnect')
+            ->assertOk();
+        $this->assertDatabaseHas('live_sessions', ['id' => $sessionId, 'state' => 'reconnecting']);
+        $this->assertDatabaseCount('realtime_outbox_messages', 6);
+    }
+
+    public function test_direct_connection_unavailable_requires_a_session_participant_and_strict_input(): void
+    {
+        [$teacher, $student, $sessionId] = $this->createSession();
+        $unrelatedTeacher = $this->registerTeacher('unrelated_direct_teacher');
+        $unrelatedStudent = $this->registerStudent('unrelated_direct_student');
+
+        app('auth')->forgetGuards();
+        $this->withToken($unrelatedTeacher['token'])->postJson('/api/v1/sessions/'.$sessionId.'/direct-connection-unavailable', ['reason' => 'No route', 'client_operation_id' => (string) Str::uuid()])->assertForbidden();
+        app('auth')->forgetGuards();
+        $this->withToken($unrelatedStudent['token'])->postJson('/api/v1/sessions/'.$sessionId.'/direct-connection-unavailable', ['reason' => 'No route', 'client_operation_id' => (string) Str::uuid()])->assertForbidden();
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->postJson('/api/v1/sessions/'.$sessionId.'/direct-connection-unavailable', ['reason' => ''])->assertUnprocessable();
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->postJson('/api/v1/sessions/'.$sessionId.'/direct-connection-unavailable', ['reason' => 'No route', 'client_operation_id' => (string) Str::uuid(), 'unexpected' => true])
+            ->assertUnprocessable()->assertJsonPath('field_errors.0.field', '_schema');
+    }
+
     public function test_unrelated_user_cannot_view_or_accept_session(): void
     {
         [$teacher, $student, $sessionId] = $this->createSession();

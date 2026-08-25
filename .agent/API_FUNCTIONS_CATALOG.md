@@ -125,6 +125,7 @@
 | مغادرة الجلسة | `POST /sessions/{sessionId}/leave` | الطرفان | يسجل المغادرة ولا يعتمد التقرير. |
 | إنهاء الجلسة | `POST /sessions/{sessionId}/end` | المعلم | ينهي الاتصال المنطقي ويترك التقرير قابلًا للاعتماد. |
 | تسجيل إعادة الاتصال | `POST /sessions/{sessionId}/reconnect` | الطرفان | يعيد حالة التفاوض ويعيد إعدادات الاتصال عند الحاجة. |
+| تسجيل تعذر الاتصال المباشر | `POST /sessions/{sessionId}/direct-connection-unavailable` | الطرفان | يحفظ الحالة الرسمية `direct_connection_unavailable` وسبب الفشل مع `client_operation_id`، ثم ينشر الحدث للطرفين دون مسار وسائط بديل. |
 | إعدادات WebRTC | `GET /sessions/{sessionId}/realtime` | الطرفان | `GetRealtimeSessionConfigService` يعيد معرّفات الجلسة وإعدادات التفاوض المباشر فقط، ولا يعيد إعدادات STUN/TURN أو Relay أو أسرارًا دائمة. |
 | تفويض قناة WebSocket الداخلية | `POST /realtime/channels/authorize` | الطرفان | `LiveSessionChannelAuthorizer` داخل Laravel، دون Broadcasting أو مزود خارجي. |
 

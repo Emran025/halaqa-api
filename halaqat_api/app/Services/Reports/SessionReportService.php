@@ -3,6 +3,7 @@
 namespace App\Services\Reports;
 
 use App\Events\Notifications\SessionReportApproved;
+use App\Events\Reports\SessionReportRealtimeUpdated;
 use App\Exceptions\ApiConflictException;
 use App\Models\LiveSession;
 use App\Models\SessionReport;
@@ -45,14 +46,16 @@ class SessionReportService
                 $report = SessionReport::create(['id' => (string) Str::uuid(), 'session_id' => $lockedSession->id, 'state' => 'draft', 'version' => 1]);
             }
             $this->refreshMetrics($report, $lockedSession);
+            $updated = $report->fresh($this->reportRelations());
+            event(new SessionReportRealtimeUpdated($updated));
 
-            return $report->fresh($this->reportRelations());
+            return $updated;
         });
     }
 
     public function update(User $actor, SessionReport $report, array $data): SessionReport
     {
-        return DB::transaction(function () use ($report, $data): SessionReport {
+        $updated = DB::transaction(function () use ($report, $data): SessionReport {
             $locked = $this->lock($report);
             if (! in_array($locked->state, ['draft', 'reopened'], true)) {
                 throw new ApiConflictException('Only a draft or reopened report can be edited.', 'report_state_conflict', 'report', (string) $locked->id);
@@ -61,6 +64,9 @@ class SessionReportService
 
             return $this->load($locked);
         });
+        event(new SessionReportRealtimeUpdated($updated));
+
+        return $updated;
     }
 
     public function approve(User $actor, SessionReport $report, ?string $note, string $operationId): SessionReport
@@ -80,6 +86,7 @@ class SessionReportService
             }
             $locked->update(['state' => 'pending_student_acknowledgment', 'teacher_approved_by' => $actor->id, 'teacher_approved_at' => now(), 'teacher_approval_note' => $note, 'last_client_operation_id' => $operationId, 'last_operation_by_user_id' => $actor->id, 'last_operation_type' => 'approve', 'version' => $locked->version + 1]);
             event(new SessionReportApproved($locked));
+            event(new SessionReportRealtimeUpdated($locked));
 
             return $this->load($locked);
         });
@@ -101,6 +108,7 @@ class SessionReportService
                 $changes['state'] = 'completed';
             }
             $locked->update($changes);
+            event(new SessionReportRealtimeUpdated($locked));
 
             return $this->load($locked);
         });
@@ -118,6 +126,7 @@ class SessionReportService
                 throw new ApiConflictException('Only a completed report can be reopened.', 'report_state_conflict', 'report', (string) $locked->id);
             }
             $locked->update(['state' => 'reopened', 'teacher_approved_by' => null, 'teacher_approved_at' => null, 'teacher_approval_note' => null, 'student_acknowledged_at' => null, 'student_acknowledgment_note' => null, 'reopened_by' => $actor->id, 'reopened_at' => now(), 'reopen_reason' => $reason, 'last_client_operation_id' => $operationId, 'last_operation_by_user_id' => $actor->id, 'last_operation_type' => 'reopen', 'version' => $locked->version + 1]);
+            event(new SessionReportRealtimeUpdated($locked));
 
             return $this->load($locked);
         });
