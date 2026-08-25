@@ -27,6 +27,10 @@ def main() -> int:
         return 1
 
     expected_enums = {
+        "UserStatus": {"active", "inactive", "suspended"},
+        "HalaqaStatus": {"active", "inactive"},
+        "MembershipStatus": {"active", "inactive", "removed"},
+        "RegistrationState": {"pending", "accepted", "rejected", "completion_requested", "withdrawn", "cancelled"},
         "MistakeType": {"none", "memory", "grammar", "pronunciation", "timing"},
         "TaskType": {"memorization", "review", "recitation"},
         "Frequency": {"daily", "onceAWeek", "twiceAWeek", "thriceAWeek"},
@@ -52,7 +56,7 @@ def main() -> int:
     required_tables = [
         "registration_request_availability", "registration_request_availability_slots",
         "follow_up_plans", "follow_up_items", "quran_ayah_words", "mistakes",
-        "session_reports", "notifications", "idempotency_keys", "audit_events",
+        "session_mushaf_states", "session_reports", "notifications", "idempotency_keys", "audit_events",
     ]
     for table in required_tables:
         if f"CREATE TABLE {table}" not in sql:
@@ -62,7 +66,7 @@ def main() -> int:
             print(f"FAIL: table missing from alignment matrix: {table}")
             return 1
 
-    for marker in ["P2P", "Laravel", "mistake_type_id", "direct_p2p_only"]:
+    for marker in ["P2P", "Laravel", "mistake_type_id", "direct_p2p_only", "session_mushaf_states"]:
         if marker not in alignment:
             print(f"FAIL: alignment matrix missing marker: {marker}")
             return 1

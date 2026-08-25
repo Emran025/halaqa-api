@@ -22,7 +22,7 @@
 private-live-session.{session_id}
 ```
 
-ينفذ `LiveSessionChannelAuthorizer` التحقق من Bearer Token ومن أن المستخدم هو أحد طرفي الجلسة. لا يسمح بالاشتراك العام أو بالاعتماد على معرف الجلسة وحده.
+ينفذ `LiveSessionChannelAuthorizer` التحقق من Bearer Token ومن أن المستخدم هو أحد طرفي الجلسة. لا يسمح بالاشتراك العام أو بالاعتماد على معرف الجلسة وحده. المثال السابق يوضح `webrtc.offer`؛ وتستخدم بقية الأنواع حمولة النوع المحددة في جدول تعريف الحمولة أدناه.
 
 ## غلاف الرسالة
 
@@ -35,8 +35,11 @@ private-live-session.{session_id}
   "sender_role": "teacher",
   "type": "webrtc.offer",
   "occurred_at": "2026-08-25T10:00:00Z",
-  "client_operation_id": "uuid",
-  "payload": {}
+  "client_operation_id": null,
+  "payload": {
+    "type": "offer",
+    "sdp": "v=0..."
+  }
 }
 ```
 
@@ -140,10 +143,11 @@ private-live-session.{session_id}
   "payload": {
     "task_id": "uuid",
     "mistake_id": "uuid",
-    "ayah_id": "ayah-1-1",
+    "edition_id": 1,
+    "ayah_id": 1,
     "page_number": 1,
     "word_index": 4,
-    "mistake_type": "articulation",
+    "mistake_type": "pronunciation",
     "note": "..."
   }
 }
@@ -184,10 +188,33 @@ app/
 
 ## قواعد الحفظ
 
-يحفظ Laravel فقط البيانات الرسمية: الجلسة، قبولها وإنهاؤها، نطاق المهمة، الأخطاء، التقييمات، الملاحظات، التقرير، الاعتمادات، وجدولة المتابعة. لا يحفظ الصوت أو الفيديو أو SDP أو ICE في السجل التعليمي.
+يحفظ Laravel فقط البيانات الرسمية: الجلسة، قبولها وإنهاؤها، نطاق المهمة، حالة المصحف الرسمية في `session_mushaf_states`، الأخطاء، التقييمات، الملاحظات، التقرير، الاعتمادات، وجدولة المتابعة. لا يحفظ الصوت أو الفيديو أو SDP أو ICE في السجل التعليمي.
 
 يستخدم كل تغيير رسمي `client_operation_id` أو `Idempotency-Key` لمنع التكرار عند إعادة الاتصال. يجب أن تكون عمليات الحفظ في Services ومعاملات ذرية عند ارتباط أكثر من Model.
 
 ## الممنوعات
 
 يمنع نقل الصوت أو الفيديو إلى Laravel أو WebSocket، ويمنع تشغيل Media Server أو Relay أو Proxy، ويمنع استخدام STUN أو TURN، ويمنع Reverb وPusher وSoketi وSocket.IO وSIPSorcery وأي مكتبة خارجية لتنفيذ WebSocket أو WebRTC. كما يمنع فتح قناة عامة أو قبول رسالة لا يثبت Laravel أن مرسلها ومستقبلها طرفان في الجلسة.
+
+
+## تعريف حمولة الرسائل
+
+الحقل `payload` ليس خريطة عامة؛ يختار الخادم مخطط الحمولة حسب قيمة `type`، ولا يقبل حقولًا إضافية. جميع المعرفات في الحمولة الرقمية الخاصة بالمصحف هي أرقام، ويجب أن تتطابق مع `edition_id` نفسه.
+
+| `type` | الحقول الإلزامية في `payload` | التخزين أو النقل |
+|---|---|---|
+| `webrtc.offer` | `type: offer`, `sdp: string` | تمرير مؤقت فقط عبر WebSocket؛ لا تخزين. |
+| `webrtc.answer` | `type: answer`, `sdp: string` | تمرير مؤقت فقط عبر WebSocket؛ لا تخزين. |
+| `webrtc.ice_candidate` | `candidate: string`, `sdp_mid: string|null`, `sdp_m_line_index: integer`, `username_fragment: string|null` | Host candidate فقط، تمرير مؤقت، ولا تخزين. |
+| `webrtc.renegotiate` | `reason: string`, `attempt: integer` | تمرير مؤقت فقط؛ لا يغير حالة الجلسة إلا عبر Service. |
+| `mushaf.page_changed` | `edition_id: integer`, `page_number: integer` | عرض مؤقت عبر DataChannel P2P؛ التثبيت الرسمي عبر REST. |
+| `mushaf.ayah_selected` | `edition_id: integer`, `ayah_id: integer`, `page_number: integer` | عرض مؤقت عبر DataChannel P2P؛ لا يصبح رسميًا تلقائيًا. |
+| `mistake.created` | `task_id: uuid`, `edition_id: integer`, `ayah_id: integer`, `page_number: integer`, `word_index: integer`, `mistake_type: enum`, `note: string|null` | عرض فوري، ثم حفظ رسمي عبر REST. |
+| `mistake.updated` | `task_id: uuid`, `mistake_id: uuid`, `mistake_type: enum`, `note: string|null` | عرض فوري، ثم حفظ رسمي عبر REST. |
+| `mistake.deleted` | `task_id: uuid`, `mistake_id: uuid` | عرض فوري، ثم حذف منطقي رسمي عبر REST. |
+| `guidance.request_repeat` | `task_id: uuid`, `ayah_id: integer|null`, `reason: string|null` | رسالة توجيه مؤقتة؛ يسجلها REST أو التقرير عند اعتمادها. |
+| `task.changed` | `task_id: uuid`, `state: enum`, `current_page: integer|null`, `current_ayah_id: integer|null` | عرض فوري، والحالة الرسمية عبر REST. |
+| `report.updated` | `report_id: uuid`, `state: enum`, `version: integer` | يرسلها Laravel بعد حفظ رسمي. |
+| `realtime.direct_connection_unavailable` | `state: direct_connection_unavailable`, `reason: string` | حالة رسمية للجلسة؛ لا تنشئ Relay أو مسارًا وسيطًا. |
+
+يجب أن يطبق `WebRtcSignalingService` تحققًا مستقلًا لكل نوع رسالة: صحة الحقول، مطابقة `session_id`، مطابقة المرسل والمستقبل، وعدم السماح بأن يجعل DataChannel أو WebSocket الحالة الرسمية بدل REST وService.

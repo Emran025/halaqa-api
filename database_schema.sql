@@ -94,6 +94,7 @@ CREATE TABLE halaqas (
     id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     teacher_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     name VARCHAR(150) NOT NULL,
+    description VARCHAR(1000) NULL,
     gender VARCHAR(20) NOT NULL,
     country VARCHAR(100) NOT NULL,
     residence VARCHAR(200) NOT NULL,
@@ -476,6 +477,37 @@ CREATE TABLE live_sessions (
     CONSTRAINT chk_live_session_p2p CHECK (direct_p2p_only = TRUE)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE session_mushaf_states (
+    session_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    edition_id SMALLINT UNSIGNED NOT NULL,
+    page_number SMALLINT UNSIGNED NOT NULL,
+    surah_id SMALLINT UNSIGNED NULL,
+    ayah_id INT UNSIGNED NULL,
+    range_from_page SMALLINT UNSIGNED NULL,
+    range_from_ayah_id INT UNSIGNED NULL,
+    range_to_page SMALLINT UNSIGNED NULL,
+    range_to_ayah_id INT UNSIGNED NULL,
+    updated_by_user_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    version BIGINT UNSIGNED NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    PRIMARY KEY (session_id),
+    KEY idx_session_mushaf_edition_page (edition_id, page_number),
+    KEY idx_session_mushaf_updated_by (updated_by_user_id, updated_at),
+    CONSTRAINT fk_session_mushaf_session FOREIGN KEY (session_id) REFERENCES live_sessions(id) ON DELETE CASCADE,
+    CONSTRAINT fk_session_mushaf_edition FOREIGN KEY (edition_id) REFERENCES quran_editions(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_session_mushaf_surah FOREIGN KEY (surah_id, edition_id) REFERENCES quran_surahs(id, edition_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_session_mushaf_ayah FOREIGN KEY (ayah_id, edition_id) REFERENCES quran_ayahs(id, edition_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_session_mushaf_range_from_ayah FOREIGN KEY (range_from_ayah_id, edition_id) REFERENCES quran_ayahs(id, edition_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_session_mushaf_range_to_ayah FOREIGN KEY (range_to_ayah_id, edition_id) REFERENCES quran_ayahs(id, edition_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_session_mushaf_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+    CONSTRAINT chk_session_mushaf_page CHECK (page_number BETWEEN 1 AND 604),
+    CONSTRAINT chk_session_mushaf_range_pages CHECK (
+        (range_from_page IS NULL AND range_to_page IS NULL)
+        OR (range_from_page BETWEEN 1 AND 604 AND range_to_page BETWEEN 1 AND 604 AND range_from_page <= range_to_page)
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE session_tasks (
     id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     session_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
@@ -564,8 +596,9 @@ CREATE TABLE mistakes (
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     deleted_at DATETIME NULL,
+    active_mistake_key TINYINT GENERATED ALWAYS AS (IF(deleted_at IS NULL, 1, NULL)) STORED,
     PRIMARY KEY (id),
-    UNIQUE KEY uq_mistake_position_type (tracking_detail_id, ayah_id, word_index, mistake_type_id, deleted_at),
+    UNIQUE KEY uq_mistake_position_type (tracking_detail_id, ayah_id, word_index, mistake_type_id, active_mistake_key),
     KEY idx_mistakes_ayah (edition_id, ayah_id, word_index),
     KEY idx_mistakes_type (mistake_type_id, created_at),
     KEY idx_mistakes_creator (created_by_user_id, created_at),

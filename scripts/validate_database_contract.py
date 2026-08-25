@@ -22,7 +22,7 @@ EXPECTED_TABLES = {
     "mistake_types", "quran_editions", "quran_surahs", "quran_pages",
     "quran_ayahs", "quran_ayah_words", "quran_range_units",
     "follow_up_plans", "follow_up_plan_details", "follow_up_items",
-    "live_sessions", "session_tasks", "daily_trackings", "tracking_details",
+    "live_sessions", "session_mushaf_states", "session_tasks", "daily_trackings", "tracking_details",
     "mistakes", "task_notes", "task_evaluations", "session_reports",
     "notifications", "idempotency_keys", "personal_access_tokens",
     "password_reset_tokens", "audit_events", "jobs", "failed_jobs",
@@ -113,7 +113,7 @@ def main() -> int:
     required_markers = [
         "registration_request_profiles", "registration_request_availability",
         "registration_request_availability_slots", "student_availability_slots",
-        "follow_up_plan_details", "follow_up_items", "quran_ayah_words",
+        "follow_up_plan_details", "follow_up_items", "session_mushaf_states", "quran_ayah_words",
         "mistake_type_id", "direct_p2p_only", "idempotency_keys", "audit_events",
     ]
     absent_markers = [marker for marker in required_markers if marker not in sql]

@@ -44,8 +44,8 @@
 
 | الوظيفة | Endpoint | الدور | Laravel المتوقع |
 |---|---|---|---|
-| تسجيل طالب جديد | `POST /auth/register/student` | عام | `RegisterStudentController` + `StoreStudentRegistrationRequest` + `RegisterStudentService` + `UserResource`. |
-| تسجيل معلم جديد | `POST /auth/register/teacher` | عام | `RegisterTeacherController` + `TeacherRegistrationRequest` + `RegisterTeacherService` + `TeacherProfileResource`، دون موافقة إدارية ضمن النطاق الحالي. |
+| تسجيل طالب جديد | `POST /auth/register/student` | عام | `RegisterStudentController` + `StoreStudentRegistrationRequest` + `RegisterStudentService` + `UserResource`؛ يتطلب `client_operation_id` لمنع تكرار الإنشاء. |
+| تسجيل معلم جديد | `POST /auth/register/teacher` | عام | `RegisterTeacherController` + `TeacherRegistrationRequest` + `RegisterTeacherService` + `TeacherProfileResource`؛ يتطلب `client_operation_id`، ودون موافقة إدارية ضمن النطاق الحالي. |
 | تسجيل الدخول | `POST /auth/login` | عام | `LoginController` + `LoginRequest` + `LoginService` + `UserResource`. |
 | تسجيل الخروج | `POST /auth/logout` | المعلم/الطالب | Controller نحيف + خدمة إبطال الرمز عند استخدام Sanctum. |
 | طلب إعادة كلمة المرور | `POST /auth/password/forgot` | عام | Request + Service/Password Broker. |
@@ -74,7 +74,7 @@
 | الوظيفة | Endpoint | الدور | قاعدة الحالة |
 |---|---|---|---|
 | عرض طلبات المستخدم | `GET /registration-requests` | المعلم/الطالب | يرشح الخادم النتائج وفق الدور والعلاقة. |
-| تقديم طلب عام أو موجه بالكود | `POST /registration-requests` | الطالب | يرسل `teacher_code` اختياريًا؛ عند فراغه يظهر الطلب لجميع المعلمين المؤهلين بملخص عام فقط. |
+| تقديم طلب عام أو موجه بالكود | `POST /registration-requests` | الطالب | يرسل `teacher_code` اختياريًا و`client_operation_id` إلزاميًا؛ عند فراغه يظهر الطلب لجميع المعلمين المؤهلين بملخص عام فقط. |
 | تقديم طلب مباشر إلى حلقة | `POST /halaqas/{halaqaId}/registration-requests` | الطالب | مسار توافق اختياري إذا اختار الطالب حلقة محددة، ويطبق نفس إخفاء البيانات قبل القبول. |
 | طلبات الحلقة الواردة | `GET /halaqas/{halaqaId}/registration-requests` | المعلم المالك | يعرض الطلبات التابعة للحلقة فقط. |
 | عرض تفاصيل الطلب | `GET /registration-requests/{registrationId}` | صاحب الطلب أو معلم الحلقة | `RegistrationPolicy@view`. |
@@ -103,13 +103,13 @@
 
 | الوظيفة | Endpoint | الدور | المصدر |
 |---|---|---|---|
-| تحميل قائمة السور | `GET /quran/surahs` | المعلم/الطالب | مصدر المصحف المعتمد، للعرض فقط. |
-| تحميل صفحة | `GET /quran/pages/{pageNumber}` | المعلم/الطالب | يعيد الصفحة والآيات والكلمات. |
-| تحميل آية | `GET /quran/ayahs/{ayahId}` | المعلم/الطالب | يعيد الكلمات مع فهارسها التفاعلية. |
+| تحميل قائمة السور | `GET /quran/surahs?edition_id={edition_id}` | المعلم/الطالب | مصدر المصحف المعتمد، للعرض فقط؛ الإصدار اختياري وله افتراضي معروف. |
+| تحميل صفحة | `GET /quran/pages/{pageNumber}?edition_id={edition_id}` | المعلم/الطالب | يعيد `edition_id` والصفحة والآيات والكلمات. |
+| تحميل آية | `GET /quran/ayahs/{ayahId}?edition_id={edition_id}` | المعلم/الطالب | يعيد `edition_id` والآية والكلمات مع فهارسها التفاعلية. |
 | استعادة حالة المصحف | `GET /sessions/{sessionId}/mushaf-state` | طرف الجلسة | يعيد آخر صفحة وآية ونطاق محفوظ. |
-| حفظ حالة المصحف | `PUT /sessions/{sessionId}/mushaf-state` | المعلم/الطالب وفق صلاحية الجلسة | يحفظ الحالة الرسمية أو المسودة. |
+| حفظ حالة المصحف | `PUT /sessions/{sessionId}/mushaf-state` | المعلم/الطالب وفق صلاحية الجلسة | يحفظ الإصدار والصفحة والآية والنطاق الرسمي مع `client_operation_id`; أما المؤشر اللحظي فمؤقت عبر DataChannel. |
 
-تظل مزامنة الصفحة والمؤشر اللحظي عبر WebSocket أو DataChannel، ولا يلزم إرسال كل تغيير عرضي إلى قاعدة البيانات. أما نطاق التلاوة ونهاية الآية فبيانات رسمية تحفظ عبر endpoint أو Service الجلسة.
+تظل مزامنة الصفحة والمؤشر اللحظي عبر WebSocket أو DataChannel، ولا يلزم إرسال كل تغيير عرضي إلى قاعدة البيانات. أما إصدار المصحف والصفحة الحالية ونطاق التلاوة ونهاية الآية فبيانات رسمية تحفظ عبر `PUT /sessions/{sessionId}/mushaf-state` داخل `session_mushaf_states` بواسطة Service الجلسة. لا تعتمد الواجهة على حالة محلية بوصفها مصدر الحقيقة.
 
 ## وظائف الجلسة المباشرة
 

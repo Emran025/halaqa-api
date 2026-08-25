@@ -35,7 +35,7 @@ description: Laravel architecture governance for AI agents. Use when creating, m
 
 ## عقد الاتصال الصريح
 
-يجب أن يعرّف كل Request وResponse في `openapi.yaml` مخططًا مسمى بخصائصه وأنواعه وحدوده وقيمه المطلوبة. يُمنع استخدام خاصية عامة باسم `data` لاحتواء مورد أو قائمة، ويجب استخدام اسم المجال مثل `student`, `teacher_profile`, `sessions`, `mistakes`, أو `report`. تُمنع `additionalProperties: true` في أجسام المجال؛ وأي خريطة ديناميكية يجب تحويلها إلى مصفوفة عناصر ذات `key` و`value` معرفين أو إلى مخطط مسمى ومبرر.
+يجب أن يعرّف كل Request وResponse في `openapi.yaml` مخططًا مسمى بخصائصه وأنواعه وحدوده وقيمه المطلوبة. يُمنع استخدام خاصية عامة باسم `data` لاحتواء مورد أو قائمة، ويجب استخدام اسم المجال مثل `student_profile`, `teacher_profile`, `halaqa`, `sessions`, `mistakes`, أو `report`. تُمنع `additionalProperties: true` في أجسام المجال؛ وأي خريطة ديناميكية يجب تحويلها إلى مصفوفة عناصر ذات `key` و`value` معرفين أو إلى مخطط مسمى ومبرر. يجب أن تحمل موارد المصحف `edition_id` صراحةً، وأن تكون معرّفات السور والآيات والصفحات الرقمية متطابقة مع MySQL. استخدم `client_operation_id` أو `Idempotency-Key` في العمليات القابلة لإعادة المحاولة.
 
 ### القواعد المعمارية غير القابلة للتفاوض
 
@@ -83,7 +83,7 @@ description: Laravel architecture governance for AI agents. Use when creating, m
 
 ضع Events في `app/Events`، وListeners في `app/Listeners`، وNotifications في `app/Notifications`. لا تستخدم Laravel Broadcasting عبر مزود أو حزمة خارجية. ضع قناة الجلسة وتفويضها في `app/Realtime/Channels`، وتنفيذ WebSocket وإدارة الاتصالات وترميز الإطارات في `app/Realtime/WebSocket`، وخدمة الإشارة في `app/Realtime/Signaling`.
 
-استخدم WebSocket الداخلي داخل Laravel لحالة الجلسة وإشارات `offer`, `answer`, و`ice_candidate` فقط. استخدم WebRTC P2P للصوت والفيديو، وDataChannel P2P لأحداث العرض اللحظية. لا تضع الصوت أو الفيديو أو SDP أو ICE داخل Laravel أو قاعدة البيانات، ويحفظ Laravel الحالة والبيانات الرسمية عبر Services.
+استخدم WebSocket الداخلي داخل Laravel لحالة الجلسة وإشارات `offer`, `answer`, و`ice_candidate` فقط. استخدم WebRTC P2P للصوت والفيديو، وDataChannel P2P لأحداث العرض اللحظية. لا تضع الصوت أو الفيديو أو SDP أو ICE داخل Laravel أو قاعدة البيانات. احفظ الإصدار والصفحة والآية ونطاق التلاوة الرسمي في `session_mushaf_states` عبر Service، ولا تجعل أحداث العرض المؤقتة مصدر الحقيقة. يحفظ Laravel بقية البيانات الرسمية عبر Services.
 
 ### قاعدة البيانات والاختبارات
 
@@ -140,7 +140,7 @@ description: Laravel architecture governance for AI agents. Use when creating, m
 - استخدم [PROJECT_ARCHITECTURE_POLICY.md](PROJECT_ARCHITECTURE_POLICY.md) كمرجع أعلى لنطاق النظام وقرارات Laravel-only وP2P-only.
 - استخدم [DATABASE_SCHEMA_CONTRACT.md](DATABASE_SCHEMA_CONTRACT.md) قبل إنشاء أو تعديل Model أو Migration أو علاقة تخزين.
 - استخدم [DATABASE_API_ALIGNMENT.md](DATABASE_API_ALIGNMENT.md) عند تغيير حقل أو Resource أو Endpoint للتأكد من تتبع البيانات بين API وMySQL.
-- استخدم `scripts/audit_openapi_explicit_contract.py` و`scripts/audit_openapi_nested_objects.py` عند مراجعة اكتمال حقول API.
+- استخدم `scripts/audit_openapi_explicit_contract.py` و`scripts/audit_openapi_nested_objects.py` و`scripts/audit_cross_document_consistency.py` عند مراجعة اكتمال ومواءمة حقول API وMySQL والوثائق.
 - استخدم [references/canonical-tree.md](references/canonical-tree.md) عند إنشاء أو نقل ملفات.
 - استخدم [references/placement-rules.md](references/placement-rules.md) عند اختيار الطبقة المناسبة.
 - استخدم [references/realtime-and-webrtc.md](references/realtime-and-webrtc.md) عند بناء WebSocket أو WebRTC أو مزامنة المصحف.
