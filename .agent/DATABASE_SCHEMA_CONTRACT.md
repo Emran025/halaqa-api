@@ -269,7 +269,7 @@ tracking_units ──< follow_up_plan_details, quran_range_units
 
 ## الإشعارات والتتبع التقني
 
-`notifications` يخزن إشعار المستخدم ونوعه وعنوانه ونصه وحقل `payload` JSON الصريح ووقت قراءته. لا يستخدم العقد حقلًا عامًا باسم `data`. ويخزن `idempotency_keys` نتيجة العمليات القابلة لإعادة المحاولة حتى لا يتكرر الطلب عند ضعف الاتصال.
+`notifications` يخزن إشعار المستخدم ونوعه وعنوانه ونصه وحقل `payload` JSON الصريح ووقت قراءته. يقتصر `type` على `registration_request`, `session_scheduled`, `session_started`, `session_ended`, `report_ready`, `follow_up_due`, `reminder`, و`system`، مع فهرس `(user_id, read_at, created_at)`. لا يستخدم العقد حقلًا عامًا باسم `data`. ويخزن `idempotency_keys` نتيجة العمليات القابلة لإعادة المحاولة حتى لا يتكرر الطلب عند ضعف الاتصال.
 
 `audit_events` ليس سجلًا تعليميًا؛ هو سجل تقني/تشغيلي محدود لتتبع من نفذ قرارًا ومتى وعلى أي مورد، ولا يخزن SDP أو ICE أو الصوت أو الفيديو.
 

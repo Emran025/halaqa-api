@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\V1\Memberships\AssignStudentToHalaqaController;
 use App\Http\Controllers\Api\V1\Memberships\ListHalaqaStudentsController;
 use App\Http\Controllers\Api\V1\Memberships\RemoveStudentFromHalaqaController;
 use App\Http\Controllers\Api\V1\Memberships\UpdateMembershipController;
+use App\Http\Controllers\Api\V1\Notifications\ListNotificationsController;
+use App\Http\Controllers\Api\V1\Notifications\MarkAllNotificationsReadController;
+use App\Http\Controllers\Api\V1\Notifications\MarkNotificationReadController;
 use App\Http\Controllers\Api\V1\Progress\FollowUpItemActionController;
 use App\Http\Controllers\Api\V1\Progress\GetStudentAvailabilityController;
 use App\Http\Controllers\Api\V1\Progress\GetStudentFollowUpPlanController;
@@ -63,6 +66,7 @@ use App\Models\FollowUpItem;
 use App\Models\HalaqaMembership;
 use App\Models\LiveSession;
 use App\Models\Mistake;
+use App\Models\Notification;
 use App\Models\RegistrationRequest;
 use App\Models\SessionTask;
 use App\Models\TaskNote;
@@ -104,6 +108,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::model('membership', HalaqaMembership::class);
         Route::model('followUpItem', FollowUpItem::class);
+        Route::model('notification', Notification::class);
         Route::model('registrationRequest', RegistrationRequest::class);
         Route::get('students/{student}/availability', GetStudentAvailabilityController::class);
         Route::put('students/{student}/availability', UpdateStudentAvailabilityController::class);
@@ -112,6 +117,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('students/{student}/trackings', ListStudentTrackingsController::class);
         Route::get('students/{student}/mistakes', ListStudentMistakesController::class);
         Route::get('students/{student}/reports', ListStudentReportsController::class);
+        Route::get('notifications', ListNotificationsController::class);
+        Route::post('notifications/read-all', MarkAllNotificationsReadController::class);
+        Route::post('notifications/{notification}/read', MarkNotificationReadController::class);
         Route::get('follow-up-items', ListFollowUpItemsController::class);
         Route::post('follow-up-items/{followUpItem}/complete', [FollowUpItemActionController::class, 'complete']);
         Route::post('follow-up-items/{followUpItem}/skip', [FollowUpItemActionController::class, 'skip']);

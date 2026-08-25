@@ -716,6 +716,7 @@ CREATE TABLE notifications (
     updated_at DATETIME NOT NULL,
     PRIMARY KEY (id),
     KEY idx_notifications_user_read_date (user_id, read_at, created_at),
+    CONSTRAINT chk_notifications_type CHECK (type IN ('registration_request', 'session_scheduled', 'session_started', 'session_ended', 'report_ready', 'follow_up_due', 'reminder', 'system')),
     CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
