@@ -1,7 +1,7 @@
 # عقد الاتصال اللحظي
 ## Laravel WebSocket وWebRTC P2P
 
-هذا الملف مكمل لملف `openapi.yaml`. يصف القناة اللحظية التي يتصل بها تطبيق WPF مع خادم WebSocket المضمن داخل تطبيق Laravel نفسه.
+هذا الملف مكمل لملف `openapi.yaml`. يصف القناة اللحظية التي يتصل بها تطبيق WPF على `.NET 8 (net8.0-windows)` مع خادم WebSocket المضمن داخل تطبيق Laravel نفسه.
 
 ## المبادئ الملزمة
 
