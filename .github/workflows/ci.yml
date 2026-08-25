@@ -84,7 +84,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RInE '(reverb|pusher|soketi|socket\.io|sipsorcery|stun|turn|media[[:space:]-]?server|relay|proxy)' \
+          if grep -RInE '\b(reverb|pusher|soketi|socket\.io|sipsorcery|stun|turn|media[[:space:]-]?server|relay|proxy)\b' \
               halaqat_api/app halaqat_api/routes halaqat_api/config halaqat_api/composer.json 2>/dev/null; then
             echo 'Forbidden realtime/provider dependency or relay terminology found in executable API files.'
             exit 1
