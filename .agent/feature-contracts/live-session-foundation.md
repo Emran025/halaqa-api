@@ -25,7 +25,11 @@ CreateSessionRequest -> LiveSessionService -> LiveSession/HalaqaMembership/Track
 
 ## امتداد سجل المتابعة
 
-أضيفت جداول `daily_trackings` و`tracking_details` وModel طبقي لها، مع `GET /api/v1/students/{student}/trackings` وRequest وResource صريحين. عند إنشاء مهمة جلسة تُنشئ الخدمة تفصيل تتبع draft وسجل اليوم بشكل ذري، مع unique على `session_task_id`، ليكون التفصيل الأب الرسمي للأخطاء. يقرأ الطالب سجله، ويقرأه المعلم المرتبط بعضوية فعالة فقط؛ لا يكفي حساب معلم غير مرتبط. ما زالت عمليات إكمال المهمة وتحديث الحضور التفصيلية خارج هذه الشريحة.
+أضيفت جداول `daily_trackings` و`tracking_details` وModel طبقي لها، مع `GET /api/v1/students/{student}/trackings` وRequest وResource صريحين. عند إنشاء مهمة جلسة تُنشئ الخدمة تفصيل تتبع draft وسجل اليوم بشكل ذري، مع unique على `session_task_id`، ليكون التفصيل الأب الرسمي للأخطاء. يعرض الإسقاط الآن `details` و`mistakes` المرتبطة مع الوحدات والدرجات والحالات. يقرأ الطالب سجله، ويقرأه المعلم المرتبط بعضوية فعالة فقط؛ لا يكفي حساب معلم غير مرتبط. ما زالت عمليات إكمال المهمة وتحديث الحضور التفصيلية خارج هذه الشريحة.
+
+## امتداد حالة المصحف الرسمية
+
+أضيفت Migration وModel وRequest وResource و`SessionMushafStateService` لمساري `GET/PUT /api/v1/sessions/{session}/mushaf-state`. تقصر `LiveSessionPolicy` القراءة والحفظ على طرفي الجلسة، ويتحقق Service من وجود الإصدار والصفحة وانتماء السورة والآية والنطاق إلى الإصدار نفسه، مع حفظ `version` و`last_client_operation_id` داخل Transaction. لا تُحفظ أي وسائط أو SDP أو ICE. يعيد GET حالة موجودة فقط، ولذلك تكون الجلسة التي لم تحفظ حالة مصحف بعد مستجيبة بـ404.
 
 ## امتداد تخزين الأخطاء والملاحظات والتقييمات
 
