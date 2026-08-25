@@ -88,6 +88,10 @@ class LiveSessionTest extends TestCase
         $mistake = $this->withToken($teacher['token'])->postJson($base.'/mistakes', $mistakePayload)
             ->assertCreated()->assertJsonPath('mistake.ayah_id', 1)->assertJsonPath('mistake.page_number', 1)->assertJsonPath('mistake.mistake_type', 'pronunciation')->assertJsonPath('mistake.source', 'teacher')->assertJsonMissingPath('data');
         $mistakeId = $mistake->json('mistake.id');
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->getJson('/api/v1/students/'.$student['user']['id'].'/trackings')
+            ->assertOk()->assertJsonCount(1, 'trackings')->assertJsonCount(1, 'trackings.0.details')->assertJsonPath('trackings.0.details.0.status', 'in_progress')->assertJsonCount(1, 'trackings.0.details.0.mistakes')->assertJsonPath('trackings.0.details.0.mistakes.0.id', $mistakeId);
+        app('auth')->forgetGuards();
         $this->withToken($teacher['token'])->postJson($base.'/mistakes', $mistakePayload)
             ->assertCreated()->assertJsonPath('mistake.id', $mistakeId);
         app('auth')->forgetGuards();

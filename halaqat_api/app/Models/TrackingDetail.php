@@ -25,6 +25,16 @@ class TrackingDetail extends Model
         return $this->belongsTo(SessionTask::class, 'session_task_id');
     }
 
+    public function fromUnit(): BelongsTo
+    {
+        return $this->belongsTo(QuranRangeUnit::class, 'from_unit_id');
+    }
+
+    public function toUnit(): BelongsTo
+    {
+        return $this->belongsTo(QuranRangeUnit::class, 'to_unit_id');
+    }
+
     public function mistakes(): HasMany
     {
         return $this->hasMany(Mistake::class, 'tracking_detail_id', 'uuid');

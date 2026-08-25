@@ -14,7 +14,7 @@ class ListStudentTrackingsController extends Controller
     public function __invoke(ListTrackingsRequest $request, User $student): TrackingCollectionResource
     {
         Gate::authorize('view', $student);
-        $query = DailyTracking::query()->where('student_id', $student->id)->with('membership')->when($request->filled('from'), fn ($q) => $q->whereDate('date', '>=', $request->validated('from')))->when($request->filled('to'), fn ($q) => $q->whereDate('date', '<=', $request->validated('to')))->latest('date');
+        $query = DailyTracking::query()->where('student_id', $student->id)->with(['membership', 'details.trackingType', 'details.fromUnit.unitType', 'details.toUnit.unitType', 'details.mistakes.detail.task.session', 'details.mistakes.mistakeType', 'details.mistakes.creator', 'details.mistakes.ayah'])->when($request->filled('from'), fn ($q) => $q->whereDate('date', '>=', $request->validated('from')))->when($request->filled('to'), fn ($q) => $q->whereDate('date', '<=', $request->validated('to')))->latest('date');
 
         return new TrackingCollectionResource($query->paginate(min(max((int) $request->input('per_page', 20), 1), 100))->withQueryString());
     }
