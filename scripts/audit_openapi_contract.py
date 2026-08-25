@@ -61,7 +61,7 @@ def main() -> int:
                     request_details = media_schema(request_body.get("content"))
             elif method.lower() in {"post", "put", "patch"} and operation_id not in {
                 "logout", "activateHalaqa", "deactivateHalaqa", "acceptSession", "leaveSession",
-                "endSession", "reconnectSession", "cancelSession", "markNotificationRead",
+                "endSession", "reconnectSession", "cancelSession", "completeFollowUpItem", "markNotificationRead",
                 "markAllNotificationsRead", "acceptRegistrationRequest",
             }:
                 missing_request.append(f"{method.upper()} {path} ({operation_id})")

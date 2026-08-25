@@ -58,6 +58,30 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '409':
           $ref: '#/components/responses/Conflict'
+  /auth/register/teacher:
+    post:
+      tags: [Auth]
+      summary: إنشاء حساب معلم وملفه التعريفي
+      description: لا تتطلب هذه العملية موافقة إدارية ضمن النطاق الحالي؛ ينشأ حساب المعلم وفق سياسة التسجيل المعتمدة.
+      operationId: registerTeacher
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeacherRegistrationInput'
+      responses:
+        '201':
+          description: تم إنشاء حساب المعلم
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /auth/login:
     post:
       tags: [Auth]
@@ -151,6 +175,41 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /me/student-profile:
+    get:
+      tags: [Profile]
+      summary: عرض الملف التفصيلي للطالب الحالي
+      operationId: getCurrentStudentProfile
+      responses:
+        '200':
+          description: الملف التفصيلي وخطة الطالب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfileResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    patch:
+      tags: [Profile]
+      summary: تعديل الملف التفصيلي للطالب الحالي
+      operationId: updateCurrentStudentProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStudentProfileInput'
+      responses:
+        '200':
+          description: تم تحديث ملف الطالب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfileResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /me:
     get:
       tags: [Profile]
@@ -182,6 +241,398 @@ paths:
                 $ref: '#/components/schemas/UserResponse'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /me/teacher-profile:
+    get:
+      tags: [Profile]
+      summary: عرض الملف التفصيلي للمعلم الحالي
+      operationId: getCurrentTeacherProfile
+      responses:
+        '200':
+          description: الملف التفصيلي للمعلم
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherProfileResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    patch:
+      tags: [Profile]
+      summary: تعديل الملف التفصيلي للمعلم الحالي
+      operationId: updateCurrentTeacherProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTeacherProfileInput'
+      responses:
+        '200':
+          description: تم تحديث ملف المعلم
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherProfileResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /me/teacher-documents:
+    get:
+      tags: [Profile]
+      summary: قائمة مؤهلات ووثائق المعلم الحالي
+      operationId: listCurrentTeacherDocuments
+      responses:
+        '200':
+          description: وثائق المعلم
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherDocumentCollectionResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Profile]
+      summary: إرفاق مؤهل أو وثيقة للمعلم
+      operationId: createTeacherDocument
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TeacherDocumentUploadInput'
+      responses:
+        '201':
+          description: تم حفظ الوثيقة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherDocumentResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /me/teacher-documents/{documentId}:
+    delete:
+      tags: [Profile]
+      summary: حذف وثيقة المعلم الحالية
+      operationId: deleteTeacherDocument
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: تم حذف الوثيقة
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /teachers:
+    get:
+      tags: [Profile]
+      summary: قائمة المعلمين المتاحين للطالب
+      description: يعيد بيانات عامة فقط. لا تظهر بيانات التواصل أو الملف التفصيلي قبل قبول طلب الطالب وبدء العلاقة التعليمية.
+      operationId: listAvailableTeachers
+      parameters:
+        - name: code
+          in: query
+          description: كود معلم اختياري؛ عند وجوده يعاد المعلم المطابق فقط.
+          schema:
+            type: [string, 'null']
+            maxLength: 40
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: قائمة عامة للمعلمين
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherPublicCollectionResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /teachers/{teacherId}:
+    get:
+      tags: [Profile]
+      summary: عرض بطاقة معلم عامة
+      operationId: getPublicTeacher
+      parameters:
+        - $ref: '#/components/parameters/TeacherId'
+      responses:
+        '200':
+          description: بيانات عامة للمعلم
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherPublicResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /student-applications:
+    get:
+      tags: [Registrations]
+      summary: صندوق طلبات الطلاب المتاحة للمعلم
+      description: يعرض المتقدمين الموجهين إلى كود المعلم أو الطلبات العامة التي ترك فيها الطالب كود المعلم فارغًا، دون البيانات الحساسة قبل القبول وبدء العلاقة التعليمية.
+      operationId: listTeacherApplicationInbox
+      parameters:
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [pending, completion_requested, accepted, rejected]
+            default: pending
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 120
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: قائمة متقدمين ببيانات عامة فقط قبل القبول
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicantCollectionResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /students/{studentId}:
+    parameters:
+      - $ref: '#/components/parameters/StudentId'
+    get:
+      tags: [Profile]
+      summary: عرض ملف الطالب التفصيلي
+      description: يظهر للطالب نفسه، وللمعلم فقط بعد قبول الطالب وبدء العلاقة التعليمية أو وجود جلسة معتمدة. لا يظهر الملف التفصيلي للمعلمين الآخرين.
+      operationId: getStudentProfile
+      responses:
+        '200':
+          description: الملف التفصيلي للطالب مع مستوى الخصوصية المسموح
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfileResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /students/{studentId}/follow-up-plan:
+    parameters:
+      - $ref: '#/components/parameters/StudentId'
+    get:
+      tags: [Progress]
+      summary: عرض خطة الحفظ والمراجعة والتلاوة
+      operationId: getStudentFollowUpPlan
+      responses:
+        '200':
+          description: خطة المتابعة الحالية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpPlanResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Progress]
+      summary: اعتماد أو تحديث خطة متابعة الطالب
+      description: يسمح للمعلم بتثبيت الخطة بعد القبول، ويُسمح للطالب بتعديل مقترحه قبل اعتماد المعلم وفق حالة العلاقة.
+      operationId: updateStudentFollowUpPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowUpPlanInput'
+      responses:
+        '200':
+          description: تم تحديث الخطة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpPlanResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /students/{studentId}/availability:
+    parameters:
+      - $ref: '#/components/parameters/StudentId'
+    get:
+      tags: [Progress]
+      summary: عرض أوقات حضور الطالب المتاحة
+      operationId: getStudentAvailability
+      responses:
+        '200':
+          description: أوقات الحضور والمنطقة الزمنية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendancePreferencesResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags: [Progress]
+      summary: تحديث أوقات حضور الطالب
+      operationId: updateStudentAvailability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendancePreferences'
+      responses:
+        '200':
+          description: تم تحديث أوقات الحضور
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendancePreferencesResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /follow-up-items:
+    get:
+      tags: [Progress, Sessions]
+      summary: قائمة المتابعة اليومية المجدولة
+      description: يعيد للمعلم قائمة طلابه المستحقين للمتابعة، ويعيد للطالب عناصر متابعته الشخصية فقط.
+      operationId: listFollowUpItems
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [upcoming, due, in_progress, completed, skipped, overdue]
+        - name: task_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/TaskType'
+        - name: student_id
+          in: query
+          description: للمعلم فقط.
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: عناصر المتابعة والجدولة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpItemCollectionResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /follow-up-items/{followUpItemId}/complete:
+    post:
+      tags: [Progress]
+      summary: تعليم عنصر المتابعة كمكتمل
+      operationId: completeFollowUpItem
+      parameters:
+        - $ref: '#/components/parameters/FollowUpItemId'
+      responses:
+        '200':
+          description: تم تحديث عنصر المتابعة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpItemResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /follow-up-items/{followUpItemId}/skip:
+    post:
+      tags: [Progress]
+      summary: تجاوز عنصر متابعة مع تسجيل السبب
+      operationId: skipFollowUpItem
+      parameters:
+        - $ref: '#/components/parameters/FollowUpItemId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkipFollowUpInput'
+      responses:
+        '200':
+          description: تم تجاوز العنصر
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpItemResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /follow-up-items/{followUpItemId}/reschedule:
+    post:
+      tags: [Progress]
+      summary: إعادة جدولة عنصر المتابعة
+      operationId: rescheduleFollowUpItem
+      parameters:
+        - $ref: '#/components/parameters/FollowUpItemId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RescheduleFollowUpInput'
+      responses:
+        '200':
+          description: تم تحديث الموعد
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpItemResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /students/{studentId}/trackings:
+    get:
+      tags: [Progress]
+      summary: سجل المتابعة اليومية والحضور للطالب
+      operationId: listStudentTrackings
+      parameters:
+        - $ref: '#/components/parameters/StudentId'
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: سجلات المتابعة اليومية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackingCollectionResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /halaqas:
     get:
       tags: [Halaqas]
@@ -406,6 +857,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegistrationCollectionResponse'
+    post:
+      tags: [Registrations]
+      summary: تقديم طلب انضمام عام أو موجه إلى معلم
+      description: إذا أُرسل teacher_code يوجّه الطلب إلى المعلم المطابق، وإذا كان فارغًا يصبح الطلب ظاهرًا لصندوق جميع المعلمين المؤهلين بملخص عام فقط.
+      operationId: createGeneralRegistrationRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRegistrationInput'
+      responses:
+        '201':
+          description: تم إنشاء طلب التسجيل
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /halaqas/{halaqaId}/registration-requests:
     parameters:
       - $ref: '#/components/parameters/HalaqaId'
@@ -1532,6 +2007,20 @@ components:
       schema:
         type: string
         format: uuid
+    TeacherId:
+      name: teacherId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    FollowUpItemId:
+      name: followUpItemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     NotificationId:
       name: notificationId
       in: path
@@ -1655,12 +2144,17 @@ components:
           minLength: 8
     StudentRegistrationInput:
       type: object
-      required: [name, email, password, password_confirmation]
+      required: [name, email, password, password_confirmation, gender, birth_date, country, city, phone, phone_zone, attendance_preferences, follow_up_plan]
       properties:
         name:
           type: string
           minLength: 2
           maxLength: 120
+        username:
+          type: [string, 'null']
+          minLength: 3
+          maxLength: 60
+          pattern: '^[A-Za-z0-9_.-]+$'
         email:
           type: string
           format: email
@@ -1671,14 +2165,417 @@ components:
         password_confirmation:
           type: string
           format: password
-        phone:
+        gender:
+          $ref: '#/components/schemas/Gender'
+        birth_date:
+          type: string
+          format: date
+        country:
+          type: string
+          maxLength: 100
+        city:
+          type: string
+          maxLength: 100
+        residence:
           type: [string, 'null']
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 30
+        phone_zone:
+          type: string
+          maxLength: 8
+        whatsapp_phone:
+          type: [string, 'null']
+          maxLength: 30
+        whatsapp_zone:
+          type: [string, 'null']
+          maxLength: 8
         memorization_level:
           type: [string, 'null']
           maxLength: 120
         review_level:
           type: [string, 'null']
           maxLength: 120
+        previous_memorization:
+          $ref: '#/components/schemas/PreviousMemorization'
+        attendance_preferences:
+          $ref: '#/components/schemas/AttendancePreferences'
+        follow_up_plan:
+          $ref: '#/components/schemas/FollowUpPlanInput'
+        teacher_code:
+          type: [string, 'null']
+          description: إذا ترك فارغًا يظهر الطلب للمعلمين المؤهلين كافة دون البيانات الحساسة.
+          maxLength: 40
+        profile_bio:
+          type: [string, 'null']
+          maxLength: 2000
+    TeacherRegistrationInput:
+      type: object
+      required: [name, email, password, password_confirmation, gender, birth_date, country, city, phone, phone_zone, qualification, experience_years]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        username:
+          type: [string, 'null']
+          minLength: 3
+          maxLength: 60
+          pattern: '^[A-Za-z0-9_.-]+$'
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        password_confirmation:
+          type: string
+          format: password
+        gender:
+          $ref: '#/components/schemas/Gender'
+        birth_date:
+          type: string
+          format: date
+        country:
+          type: string
+          maxLength: 100
+        city:
+          type: string
+          maxLength: 100
+        residence:
+          type: [string, 'null']
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 30
+        phone_zone:
+          type: string
+          maxLength: 8
+        whatsapp_phone:
+          type: [string, 'null']
+          maxLength: 30
+        whatsapp_zone:
+          type: [string, 'null']
+          maxLength: 8
+        qualification:
+          type: string
+          maxLength: 250
+        experience_years:
+          type: integer
+          minimum: 0
+          maximum: 80
+        bio:
+          type: [string, 'null']
+          maxLength: 2000
+        available_time:
+          type: [string, 'null']
+          description: التوقيت المحلي المعتاد بصيغة HH:mm أو وصف زمني معتمد.
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeacherDocumentInput'
+        max_halaqas:
+          type: integer
+          minimum: 0
+          description: صفر يعني لا يوجد حد محدد في ملف المعلم.
+    TeacherDocumentInput:
+      type: object
+      required: [name, certificate_type]
+      properties:
+        name:
+          type: string
+          maxLength: 250
+        certificate_type:
+          type: string
+          maxLength: 100
+        certificate_type_other:
+          type: [string, 'null']
+          maxLength: 150
+        riwayah:
+          type: [string, 'null']
+          maxLength: 100
+        issuing_place:
+          type: [string, 'null']
+          maxLength: 200
+        issuing_date:
+          type: [string, 'null']
+          format: date
+        file_url:
+          type: [string, 'null']
+          format: uri
+    TeacherDocumentUploadInput:
+      type: object
+      required: [name, certificate_type]
+      properties:
+        name:
+          type: string
+          maxLength: 250
+        certificate_type:
+          type: string
+          maxLength: 100
+        certificate_type_other:
+          type: [string, 'null']
+          maxLength: 150
+        riwayah:
+          type: [string, 'null']
+          maxLength: 100
+        issuing_place:
+          type: [string, 'null']
+          maxLength: 200
+        issuing_date:
+          type: [string, 'null']
+          format: date
+        file:
+          type: [string, 'null']
+          format: binary
+    UpdateTeacherProfileInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: [string, 'null']
+          minLength: 2
+          maxLength: 120
+        birth_date:
+          type: [string, 'null']
+          format: date
+        gender:
+          anyOf:
+            - $ref: '#/components/schemas/Gender'
+            - type: 'null'
+        country:
+          type: [string, 'null']
+          maxLength: 100
+        city:
+          type: [string, 'null']
+          maxLength: 100
+        residence:
+          type: [string, 'null']
+          maxLength: 200
+        phone:
+          type: [string, 'null']
+          maxLength: 30
+        phone_zone:
+          type: [string, 'null']
+          maxLength: 8
+        whatsapp_phone:
+          type: [string, 'null']
+          maxLength: 30
+        whatsapp_zone:
+          type: [string, 'null']
+          maxLength: 8
+        qualification:
+          type: [string, 'null']
+          maxLength: 250
+        experience_years:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 80
+        available_time:
+          type: [string, 'null']
+        bio:
+          type: [string, 'null']
+          maxLength: 2000
+        max_halaqas:
+          type: [integer, 'null']
+          minimum: 0
+    UpdateStudentProfileInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: [string, 'null']
+          minLength: 2
+          maxLength: 120
+        birth_date:
+          type: [string, 'null']
+          format: date
+        gender:
+          anyOf:
+            - $ref: '#/components/schemas/Gender'
+            - type: 'null'
+        country:
+          type: [string, 'null']
+          maxLength: 100
+        city:
+          type: [string, 'null']
+          maxLength: 100
+        residence:
+          type: [string, 'null']
+          maxLength: 200
+        phone:
+          type: [string, 'null']
+          maxLength: 30
+        phone_zone:
+          type: [string, 'null']
+          maxLength: 8
+        whatsapp_phone:
+          type: [string, 'null']
+          maxLength: 30
+        whatsapp_zone:
+          type: [string, 'null']
+          maxLength: 8
+        memorization_level:
+          type: [string, 'null']
+          maxLength: 120
+        review_level:
+          type: [string, 'null']
+          maxLength: 120
+        previous_memorization:
+          $ref: '#/components/schemas/PreviousMemorization'
+        attendance_preferences:
+          $ref: '#/components/schemas/AttendancePreferences'
+        follow_up_plan:
+          $ref: '#/components/schemas/FollowUpPlanInput'
+        bio:
+          type: [string, 'null']
+          maxLength: 2000
+    TeacherProfileResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/TeacherProfile'
+    TeacherDocumentResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/TeacherDocument'
+    TeacherDocumentCollectionResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeacherDocument'
+    Gender:
+      type: string
+      enum: [male, female]
+    PreviousMemorization:
+      type: object
+      properties:
+        memorization_level:
+          type: [string, 'null']
+          maxLength: 120
+        review_level:
+          type: [string, 'null']
+          maxLength: 120
+        memorized_juz_count:
+          type: [number, 'null']
+          minimum: 0
+          maximum: 30
+        memorized_surah_ids:
+          type: array
+          items:
+            type: string
+        last_completed_unit:
+          $ref: '#/components/schemas/PlanDetail'
+        previous_teacher_notes:
+          type: [string, 'null']
+          maxLength: 2000
+    AttendancePreferences:
+      type: object
+      required: [timezone, weekly_slots]
+      properties:
+        timezone:
+          type: string
+          example: Asia/Riyadh
+        weekly_slots:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/WeeklyAvailabilitySlot'
+        preferred_session_duration_minutes:
+          type: integer
+          minimum: 10
+          maximum: 180
+          default: 30
+    WeeklyAvailabilitySlot:
+      type: object
+      required: [day_of_week, from, to]
+      properties:
+        day_of_week:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: 0 الأحد، و6 السبت.
+        from:
+          type: string
+          pattern: '^([01]\\d|2[0-3]):[0-5]\\d$'
+        to:
+          type: string
+          pattern: '^([01]\\d|2[0-3]):[0-5]\\d$'
+        preferred:
+          type: boolean
+          default: false
+    FollowUpPlanInput:
+      type: object
+      required: [frequency, details]
+      properties:
+        frequency:
+          $ref: '#/components/schemas/Frequency'
+        details:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PlanDetail'
+        starts_on:
+          type: [string, 'null']
+          format: date
+        ends_on:
+          type: [string, 'null']
+          format: date
+    Frequency:
+      type: string
+      enum: [daily, onceAWeek, twiceAWeek, thriceAWeek]
+    PlanDetail:
+      type: object
+      required: [task_type, unit, amount]
+      properties:
+        task_type:
+          $ref: '#/components/schemas/TaskType'
+        unit:
+          type: string
+          enum: [juz, hizb, halfHizb, quarterHizb, page]
+        amount:
+          type: integer
+          minimum: 1
+        notes:
+          type: [string, 'null']
+          maxLength: 500
+    FollowUpPlan:
+      type: object
+      required: [id, frequency, details, attendance_preferences]
+      properties:
+        id:
+          type: string
+          format: uuid
+        server_plan_id:
+          type: [string, 'null']
+        frequency:
+          $ref: '#/components/schemas/Frequency'
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanDetail'
+        attendance_preferences:
+          $ref: '#/components/schemas/AttendancePreferences'
+        starts_on:
+          type: [string, 'null']
+          format: date
+        ends_on:
+          type: [string, 'null']
+          format: date
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     ForgotPasswordInput:
       type: object
       required: [email]
@@ -1778,6 +2675,20 @@ components:
         student_count:
           type: integer
           minimum: 0
+        max_students:
+          type: [integer, 'null']
+          minimum: 0
+        available_capacity:
+          type: [integer, 'null']
+          minimum: 0
+        gender:
+          anyOf:
+            - $ref: '#/components/schemas/Gender'
+            - type: 'null'
+        country:
+          type: [string, 'null']
+        residence:
+          type: [string, 'null']
         created_at:
           type: string
           format: date-time
@@ -1824,16 +2735,65 @@ components:
       enum: [pending, accepted, rejected, completion_requested, cancelled]
     CreateRegistrationInput:
       type: object
+      required: [follow_up_plan, attendance_preferences]
       properties:
+        teacher_code:
+          type: [string, 'null']
+          description: يحدد معلمًا بعينه؛ القيمة الفارغة تجعل الطلب مفتوحًا للمعلمين المؤهلين.
+          maxLength: 40
+        requested_halaqa_id:
+          type: [string, 'null']
+          format: uuid
         message:
           type: [string, 'null']
           maxLength: 1000
+        profile:
+          $ref: '#/components/schemas/StudentApplicationProfile'
+        previous_memorization:
+          $ref: '#/components/schemas/PreviousMemorization'
+        attendance_preferences:
+          $ref: '#/components/schemas/AttendancePreferences'
+        follow_up_plan:
+          $ref: '#/components/schemas/FollowUpPlanInput'
+    StudentApplicationProfile:
+      type: object
+      required: [gender, birth_date, country, city, phone, phone_zone]
+      properties:
+        gender:
+          $ref: '#/components/schemas/Gender'
+        birth_date:
+          type: string
+          format: date
+        country:
+          type: string
+          maxLength: 100
+        city:
+          type: string
+          maxLength: 100
+        residence:
+          type: [string, 'null']
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 30
+        phone_zone:
+          type: string
+          maxLength: 8
+        whatsapp_phone:
+          type: [string, 'null']
+          maxLength: 30
+        whatsapp_zone:
+          type: [string, 'null']
+          maxLength: 8
         memorization_level:
           type: [string, 'null']
           maxLength: 120
         review_level:
           type: [string, 'null']
           maxLength: 120
+        bio:
+          type: [string, 'null']
+          maxLength: 2000
     DecisionNoteInput:
       type: object
       properties:
@@ -1854,17 +2814,53 @@ components:
           maxLength: 1000
     RegistrationRequest:
       type: object
-      required: [id, halaqa, student, state, created_at]
+      required: [id, state, student_summary, visibility, created_at]
       properties:
         id:
           type: string
           format: uuid
-        halaqa:
-          $ref: '#/components/schemas/Halaqa'
-        student:
-          $ref: '#/components/schemas/User'
+        requested_teacher:
+          anyOf:
+            - $ref: '#/components/schemas/TeacherPublicSummary'
+            - type: 'null'
+        requested_halaqa:
+          anyOf:
+            - $ref: '#/components/schemas/HalaqaPublicSummary'
+            - type: 'null'
+        routing_mode:
+          type: string
+          enum: [specific_teacher, all_available_teachers]
+          description: يحدد هل وجه الطالب الطلب إلى معلم بكود محدد أم تركه متاحًا للمعلمين المؤهلين.
+        teacher_code:
+          type: [string, 'null']
+          maxLength: 40
+        student_summary:
+          $ref: '#/components/schemas/ApplicantPublicSummary'
+        profile:
+          anyOf:
+            - $ref: '#/components/schemas/StudentApplicationProfile'
+            - type: 'null'
+          description: لا يعاد قبل القبول وبدء العلاقة التعليمية إلا للطالب نفسه أو المعلم المخول.
+        previous_memorization:
+          anyOf:
+            - $ref: '#/components/schemas/PreviousMemorization'
+            - type: 'null'
+          description: لا يعاد في صندوق الطلبات العام قبل القبول.
+        attendance_preferences:
+          anyOf:
+            - $ref: '#/components/schemas/AttendancePreferences'
+            - type: 'null'
+          description: لا يعاد قبل القبول وبدء العلاقة التعليمية.
+        follow_up_plan:
+          anyOf:
+            - $ref: '#/components/schemas/FollowUpPlan'
+            - type: 'null'
+          description: لا يعاد قبل القبول وبدء العلاقة التعليمية.
         state:
           $ref: '#/components/schemas/RegistrationState'
+        visibility:
+          type: string
+          enum: [public_summary, teacher_visible, student_visible, relationship_visible]
         message:
           type: [string, 'null']
         decision_note:
@@ -1875,6 +2871,194 @@ components:
         created_at:
           type: string
           format: date-time
+    ApplicantPublicSummary:
+      type: object
+      required: [id, display_name, status, submitted_at, sensitive_fields_hidden]
+      description: الحد الأدنى الذي يظهر للمعلم في صندوق الطلبات قبل القبول؛ لا يتضمن وسائل التواصل أو بيانات الحفظ أو الخطة أو أوقات الحضور.
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        avatar:
+          type: [string, 'null']
+          format: uri
+        status:
+          type: string
+        submitted_at:
+          type: string
+          format: date-time
+        sensitive_fields_hidden:
+          type: boolean
+          const: true
+    TeacherPublicSummary:
+      type: object
+      required: [id, display_name, teacher_code, capacity_available]
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        teacher_code:
+          type: string
+        avatar:
+          type: [string, 'null']
+          format: uri
+        gender:
+          $ref: '#/components/schemas/Gender'
+        country:
+          type: [string, 'null']
+        city:
+          type: [string, 'null']
+        qualification:
+          type: [string, 'null']
+        experience_years:
+          type: [integer, 'null']
+          minimum: 0
+        capacity_available:
+          type: boolean
+    TeacherPublic:
+      allOf:
+        - $ref: '#/components/schemas/TeacherPublicSummary'
+        - type: object
+          properties:
+            bio:
+              type: [string, 'null']
+            active_halaqa_count:
+              type: integer
+              minimum: 0
+            public_halaqas:
+              type: array
+              items:
+                $ref: '#/components/schemas/HalaqaPublicSummary'
+    TeacherProfile:
+      allOf:
+        - $ref: '#/components/schemas/TeacherPublic'
+        - type: object
+          properties:
+            birth_date:
+              type: [string, 'null']
+              format: date
+            email:
+              type: [string, 'null']
+              format: email
+            phone:
+              type: [string, 'null']
+            phone_zone:
+              type: [string, 'null']
+            whatsapp_phone:
+              type: [string, 'null']
+            whatsapp_zone:
+              type: [string, 'null']
+            residence:
+              type: [string, 'null']
+            available_time:
+              type: [string, 'null']
+            documents:
+              type: array
+              items:
+                $ref: '#/components/schemas/TeacherDocument'
+    TeacherDocument:
+      allOf:
+        - $ref: '#/components/schemas/TeacherDocumentInput'
+        - type: object
+          required: [id, has_file]
+          properties:
+            id:
+              type: integer
+            has_file:
+              type: boolean
+    HalaqaPublicSummary:
+      type: object
+      required: [id, name, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        gender:
+          $ref: '#/components/schemas/Gender'
+        country:
+          type: [string, 'null']
+        residence:
+          type: [string, 'null']
+        available_capacity:
+          type: [integer, 'null']
+    StudentProfile:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            birth_date:
+              type: [string, 'null']
+              format: date
+            gender:
+              $ref: '#/components/schemas/Gender'
+            country:
+              type: [string, 'null']
+            city:
+              type: [string, 'null']
+            residence:
+              type: [string, 'null']
+            phone:
+              type: [string, 'null']
+            phone_zone:
+              type: [string, 'null']
+            whatsapp_phone:
+              type: [string, 'null']
+            whatsapp_zone:
+              type: [string, 'null']
+            memorization_level:
+              type: [string, 'null']
+            review_level:
+              type: [string, 'null']
+            previous_memorization:
+              $ref: '#/components/schemas/PreviousMemorization'
+            attendance_preferences:
+              $ref: '#/components/schemas/AttendancePreferences'
+            follow_up_plan:
+              $ref: '#/components/schemas/FollowUpPlan'
+            visibility:
+              type: string
+              enum: [self, relationship_visible]
+    StudentProfileResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/StudentProfile'
+    TeacherPublicResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/TeacherPublic'
+    TeacherPublicCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeacherPublic'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    ApplicantCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationRequest'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
     TaskType:
       type: string
       enum: [memorization, review, recitation]
@@ -2335,6 +3519,206 @@ components:
           type: string
           minLength: 1
           maxLength: 1000
+    SkipFollowUpInput:
+      type: object
+      properties:
+        reason:
+          type: [string, 'null']
+          maxLength: 500
+    RescheduleFollowUpInput:
+      type: object
+      required: [scheduled_at]
+      properties:
+        scheduled_at:
+          type: string
+          format: date-time
+        timezone:
+          type: [string, 'null']
+        reason:
+          type: [string, 'null']
+          maxLength: 500
+    FollowUpItem:
+      type: object
+      required: [id, student_id, task_type, scheduled_for, state, plan_detail]
+      properties:
+        id:
+          type: string
+          format: uuid
+        student_id:
+          type: string
+          format: uuid
+        halaqa_id:
+          type: [string, 'null']
+          format: uuid
+        task_type:
+          $ref: '#/components/schemas/TaskType'
+        plan_detail:
+          $ref: '#/components/schemas/PlanDetail'
+        scheduled_for:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+        state:
+          type: string
+          enum: [upcoming, due, in_progress, completed, skipped, overdue]
+        completed_at:
+          type: [string, 'null']
+          format: date-time
+        skipped_at:
+          type: [string, 'null']
+          format: date-time
+        skip_reason:
+          type: [string, 'null']
+        source_plan_id:
+          type: [string, 'null']
+          format: uuid
+        notification_sent_at:
+          type: [string, 'null']
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    FollowUpItemResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/FollowUpItem'
+    FollowUpItemCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowUpItem'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    FollowUpPlanResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/FollowUpPlan'
+    AttendancePreferencesResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/AttendancePreferences'
+    AttendanceType:
+      type: string
+      enum: [present, absent, excused, late]
+    TrackingStatus:
+      type: string
+      enum: [draft, in_progress, completed, cancelled]
+    TrackingUnitDetail:
+      type: object
+      required: [unit, amount]
+      properties:
+        unit:
+          type: string
+          enum: [juz, hizb, halfHizb, quarterHizb, page]
+        amount:
+          type: number
+          minimum: 0
+        page_number:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 604
+        ayah_id:
+          type: [string, 'null']
+    TrackingDetail:
+      type: object
+      required: [id, uuid, tracking_type, from_unit, to_unit, actual_amount, status, score, gap]
+      properties:
+        id:
+          type: integer
+        uuid:
+          type: string
+          format: uuid
+        tracking_id:
+          type: string
+          format: uuid
+        tracking_type:
+          $ref: '#/components/schemas/TaskType'
+        from_unit:
+          $ref: '#/components/schemas/TrackingUnitDetail'
+        to_unit:
+          $ref: '#/components/schemas/TrackingUnitDetail'
+        actual_amount:
+          type: number
+          minimum: 0
+        status:
+          $ref: '#/components/schemas/TrackingStatus'
+        comment:
+          type: [string, 'null']
+          maxLength: 2000
+        score:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+        gap:
+          type: [number, 'null']
+        mistakes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mistake'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Tracking:
+      type: object
+      required: [id, student_id, date, attendance_type, behavior_note, details]
+      properties:
+        id:
+          type: string
+          format: uuid
+        student_id:
+          type: string
+          format: uuid
+        halaqa_id:
+          type: [string, 'null']
+          format: uuid
+        date:
+          type: string
+          format: date
+        attendance_type:
+          $ref: '#/components/schemas/AttendanceType'
+        note:
+          type: [string, 'null']
+          maxLength: 2000
+        behavior_note:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrackingDetail'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TrackingCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tracking'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
     Progress:
       type: object
       properties:
