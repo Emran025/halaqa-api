@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Console\Commands\Realtime\RunWebSocketServerCommand;
 use App\Events\Notifications\SessionEnded;
 use App\Events\Notifications\SessionReportApproved;
 use App\Events\Notifications\SessionScheduled;
@@ -34,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->commands([RunWebSocketServerCommand::class]);
     }
 
     /**

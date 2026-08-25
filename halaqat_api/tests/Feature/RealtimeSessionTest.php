@@ -2,8 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\RealtimeProtocolException;
 use App\Models\Halaqa;
 use App\Models\HalaqaMembership;
+use App\Models\User;
+use App\Realtime\Channels\LiveSessionChannelAuthorizer;
+use App\Realtime\WebSocket\HandshakeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -39,6 +43,25 @@ class RealtimeSessionTest extends TestCase
         $this->withToken($unrelated['token'])->postJson('/api/v1/realtime/channels/authorize', $payload)->assertForbidden();
         app('auth')->forgetGuards();
         $this->withToken($teacher['token'])->postJson('/api/v1/realtime/channels/authorize', ['session_id' => $sessionId, 'channel_name' => 'private-live-session.wrong'])->assertStatus(409)->assertJsonPath('error.code', 'realtime_channel_mismatch');
+    }
+
+    public function test_internal_handshake_requires_sanctum_and_exact_session_channel(): void
+    {
+        [$teacher, $student, $sessionId] = $this->createAcceptedSession();
+        $request = "GET /ws?channel=private-live-session.{$sessionId} HTTP/1.1\r\nHost: localhost\r\nUpgrade: websocket\r\nConnection: keep-alive, Upgrade\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nAuthorization: Bearer {$teacher['token']}\r\n\r\n";
+        $context = app(HandshakeService::class)->validate($request);
+        $this->assertSame($teacher['user']['id'], (string) $context['user']->id);
+        $this->assertStringContainsString('101 Switching Protocols', app(HandshakeService::class)->response($context['key']));
+        $channel = app(LiveSessionChannelAuthorizer::class)->authorize(User::findOrFail($teacher['user']['id']), 'private-live-session.'.$sessionId);
+        $this->assertSame($student['user']['id'], $channel['recipient_id']);
+        app('auth')->forgetGuards();
+        $unrelated = $this->registerStudent('realtime_handshake_unrelated');
+        try {
+            app(LiveSessionChannelAuthorizer::class)->authorize(User::findOrFail($unrelated['user']['id']), 'private-live-session.'.$sessionId);
+            $this->fail('Expected an unrelated channel participant to be rejected.');
+        } catch (RealtimeProtocolException $exception) {
+            $this->assertSame('channel_forbidden', $exception->codeName);
+        }
     }
 
     public function test_requested_session_cannot_start_realtime_or_reconnect(): void
