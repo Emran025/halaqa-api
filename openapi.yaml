@@ -2081,6 +2081,7 @@ components:
       type: string
       enum: [teacher, student]
     User:
+      additionalProperties: false
       type: object
       required: [id, role, name, email, status]
       properties:
@@ -2106,23 +2107,31 @@ components:
           type: string
           format: date-time
     AuthResponse:
+      additionalProperties: false
       type: object
-      required: [data, token]
+      required: [user, token, token_type, expires_at]
       properties:
-        data:
+        user:
           $ref: '#/components/schemas/User'
         token:
           type: string
+          description: Bearer access token.
         token_type:
           type: string
-          example: Bearer
+          enum: [Bearer]
+        expires_at:
+          type: string
+          format: date-time
     UserResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [user]
       properties:
-        data:
+        user:
+          description: بيانات الحساب العامة المسموح بها.
           $ref: '#/components/schemas/User'
     LoginInput:
+      additionalProperties: false
       type: object
       required: [email, password]
       properties:
@@ -2134,6 +2143,7 @@ components:
           format: password
           minLength: 8
     StudentRegistrationInput:
+      additionalProperties: false
       type: object
       required: [name, email, password, password_confirmation, gender, birth_date, country, city, phone, phone_zone, attendance_preferences, follow_up_plan]
       properties:
@@ -2202,6 +2212,7 @@ components:
           type: [string, 'null']
           maxLength: 2000
     TeacherRegistrationInput:
+      additionalProperties: false
       type: object
       required: [name, email, password, password_confirmation, gender, birth_date, country, city, phone, phone_zone, qualification, experience_years]
       properties:
@@ -2272,6 +2283,7 @@ components:
           minimum: 0
           description: صفر يعني لا يوجد حد محدد في ملف المعلم.
     TeacherDocumentInput:
+      additionalProperties: false
       type: object
       required: [name, certificate_type]
       properties:
@@ -2297,6 +2309,7 @@ components:
           type: [string, 'null']
           format: uri
     TeacherDocumentUploadInput:
+      additionalProperties: false
       type: object
       required: [name, certificate_type]
       properties:
@@ -2322,6 +2335,7 @@ components:
           type: [string, 'null']
           format: binary
     UpdateTeacherProfileInput:
+      additionalProperties: false
       type: object
       minProperties: 1
       properties:
@@ -2373,6 +2387,7 @@ components:
           type: [integer, 'null']
           minimum: 0
     UpdateStudentProfileInput:
+      additionalProperties: false
       type: object
       minProperties: 1
       properties:
@@ -2424,26 +2439,35 @@ components:
           type: [string, 'null']
           maxLength: 2000
     TeacherProfileResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [teacher_profile]
       properties:
-        data:
+        teacher_profile:
+          description: الملف التفصيلي للمعلم بعد تطبيق Policy.
           $ref: '#/components/schemas/TeacherProfile'
     TeacherDocumentResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [teacher_document]
       properties:
-        data:
+        teacher_document:
+          description: الوثيقة الخاصة بالمعلم.
           $ref: '#/components/schemas/TeacherDocument'
     TeacherDocumentCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [documents, meta]
       properties:
-        data:
+        documents:
+          description: قائمة وثائق المعلم.
           type: array
           items:
             $ref: '#/components/schemas/TeacherDocument'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
     RealtimeChannelAuthorizationInput:
+      additionalProperties: false
       type: object
       required: [session_id, channel_name]
       properties:
@@ -2457,11 +2481,13 @@ components:
           type: [string, 'null']
           maxLength: 120
     RealtimeChannelAuthorizationResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [authorization]
       properties:
-        data:
+        authorization:
           type: object
+          additionalProperties: false
           required: [authorized, channel_name, session_id, recipient_id]
           properties:
             authorized:
@@ -2476,12 +2502,13 @@ components:
               type: string
               format: uuid
             expires_at:
-              type: string
+              type: [string, 'null']
               format: date-time
     Gender:
       type: string
       enum: [male, female]
     PreviousMemorization:
+      additionalProperties: false
       type: object
       properties:
         memorization_level:
@@ -2504,6 +2531,7 @@ components:
           type: [string, 'null']
           maxLength: 2000
     AttendancePreferences:
+      additionalProperties: false
       type: object
       required: [timezone, weekly_slots]
       properties:
@@ -2521,6 +2549,7 @@ components:
           maximum: 180
           default: 30
     WeeklyAvailabilitySlot:
+      additionalProperties: false
       type: object
       required: [day_of_week, from, to]
       properties:
@@ -2539,6 +2568,7 @@ components:
           type: boolean
           default: false
     FollowUpPlanInput:
+      additionalProperties: false
       type: object
       required: [frequency, details]
       properties:
@@ -2559,6 +2589,7 @@ components:
       type: string
       enum: [daily, onceAWeek, twiceAWeek, thriceAWeek]
     PlanDetail:
+      additionalProperties: false
       type: object
       required: [task_type, unit, amount]
       properties:
@@ -2574,6 +2605,7 @@ components:
           type: [string, 'null']
           maxLength: 500
     FollowUpPlan:
+      additionalProperties: false
       type: object
       required: [id, frequency, details, attendance_preferences]
       properties:
@@ -2603,6 +2635,7 @@ components:
           type: string
           format: date-time
     ForgotPasswordInput:
+      additionalProperties: false
       type: object
       required: [email]
       properties:
@@ -2610,6 +2643,7 @@ components:
           type: string
           format: email
     ResetPasswordInput:
+      additionalProperties: false
       type: object
       required: [email, token, password, password_confirmation]
       properties:
@@ -2626,6 +2660,7 @@ components:
           type: string
           format: password
     ChangePasswordInput:
+      additionalProperties: false
       type: object
       required: [current_password, password, password_confirmation]
       properties:
@@ -2640,6 +2675,7 @@ components:
           type: string
           format: password
     UpdateProfileInput:
+      additionalProperties: false
       type: object
       minProperties: 1
       properties:
@@ -2654,6 +2690,7 @@ components:
         review_level:
           type: [string, 'null']
     CreateHalaqaInput:
+      additionalProperties: false
       type: object
       required: [name]
       properties:
@@ -2669,6 +2706,7 @@ components:
           enum: [active, inactive]
           default: active
     UpdateHalaqaInput:
+      additionalProperties: false
       type: object
       minProperties: 1
       properties:
@@ -2683,6 +2721,7 @@ components:
           type: string
           enum: [active, inactive]
     Halaqa:
+      additionalProperties: false
       type: object
       required: [id, teacher, name, status, student_count]
       properties:
@@ -2722,6 +2761,7 @@ components:
           type: string
           format: date-time
     AssignStudentInput:
+      additionalProperties: false
       type: object
       required: [student_id]
       properties:
@@ -2729,6 +2769,7 @@ components:
           type: string
           format: uuid
     UpdateMembershipInput:
+      additionalProperties: false
       type: object
       required: [status]
       properties:
@@ -2739,6 +2780,7 @@ components:
           type: [string, 'null']
           maxLength: 500
     Membership:
+      additionalProperties: false
       type: object
       required: [id, halaqa_id, student, status, joined_at]
       properties:
@@ -2760,6 +2802,7 @@ components:
       type: string
       enum: [pending, accepted, rejected, completion_requested, cancelled]
     CreateRegistrationInput:
+      additionalProperties: false
       type: object
       required: [follow_up_plan, attendance_preferences]
       properties:
@@ -2782,6 +2825,7 @@ components:
         follow_up_plan:
           $ref: '#/components/schemas/FollowUpPlanInput'
     StudentApplicationProfile:
+      additionalProperties: false
       type: object
       required: [gender, birth_date, country, city, phone, phone_zone]
       properties:
@@ -2821,12 +2865,14 @@ components:
           type: [string, 'null']
           maxLength: 2000
     DecisionNoteInput:
+      additionalProperties: false
       type: object
       properties:
         note:
           type: [string, 'null']
           maxLength: 1000
     CompletionRequestInput:
+      additionalProperties: false
       type: object
       required: [required_fields]
       properties:
@@ -2839,6 +2885,7 @@ components:
           type: [string, 'null']
           maxLength: 1000
     RegistrationRequest:
+      additionalProperties: false
       type: object
       required: [id, state, student_summary, visibility, created_at]
       properties:
@@ -2898,6 +2945,7 @@ components:
           type: string
           format: date-time
     ApplicantPublicSummary:
+      additionalProperties: false
       type: object
       required: [id, display_name, status, submitted_at, sensitive_fields_hidden]
       description: الحد الأدنى الذي يظهر للمعلم في صندوق الطلبات قبل القبول؛ لا يتضمن وسائل التواصل أو بيانات الحفظ أو الخطة أو أوقات الحضور.
@@ -2919,6 +2967,7 @@ components:
           type: boolean
           const: true
     TeacherPublicSummary:
+      additionalProperties: false
       type: object
       required: [id, display_name, teacher_code, capacity_available]
       properties:
@@ -2997,6 +3046,7 @@ components:
             has_file:
               type: boolean
     HalaqaPublicSummary:
+      additionalProperties: false
       type: object
       required: [id, name, status]
       properties:
@@ -3054,32 +3104,40 @@ components:
               type: string
               enum: [self, relationship_visible]
     StudentProfileResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [student_profile]
       properties:
-        data:
+        student_profile:
+          description: الملف التفصيلي للطالب وفق Policy العلاقة.
           $ref: '#/components/schemas/StudentProfile'
     TeacherPublicResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [teacher]
       properties:
-        data:
+        teacher:
+          description: البطاقة العامة للمعلم دون بيانات حساسة.
           $ref: '#/components/schemas/TeacherPublic'
     TeacherPublicCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data, meta]
+      required: [teachers, meta]
       properties:
-        data:
+        teachers:
+          description: بطاقات المعلمين العامة.
           type: array
           items:
             $ref: '#/components/schemas/TeacherPublic'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
     ApplicantCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data, meta]
+      required: [applicants, meta]
       properties:
-        data:
+        applicants:
+          description: المتقدمون ببيانات عامة فقط قبل القبول.
           type: array
           items:
             $ref: '#/components/schemas/RegistrationRequest'
@@ -3095,6 +3153,7 @@ components:
       type: string
       enum: [draft, pending_student_acknowledgment, completed, reopened]
     CreateSessionInput:
+      additionalProperties: false
       type: object
       required: [halaqa_id, student_id, task_type]
       properties:
@@ -3110,6 +3169,7 @@ components:
           type: [string, 'null']
           format: date-time
     Session:
+      additionalProperties: false
       type: object
       required: [id, halaqa_id, teacher, student, state, created_at]
       properties:
@@ -3135,6 +3195,7 @@ components:
           type: string
           format: date-time
     CreateTaskInput:
+      additionalProperties: false
       type: object
       required: [task_type]
       properties:
@@ -3153,6 +3214,7 @@ components:
         end_ayah_id:
           type: [string, 'null']
     UpdateTaskInput:
+      additionalProperties: false
       type: object
       minProperties: 1
       properties:
@@ -3175,7 +3237,9 @@ components:
         current_ayah_id:
           type: [string, 'null']
     SaveDraftInput:
+      additionalProperties: false
       type: object
+      required: [client_operation_id]
       properties:
         client_operation_id:
           type: string
@@ -3187,6 +3251,7 @@ components:
         current_ayah_id:
           type: [string, 'null']
     SessionTask:
+      additionalProperties: false
       type: object
       required: [id, session_id, task_type, state]
       properties:
@@ -3217,6 +3282,7 @@ components:
           type: integer
           minimum: 0
     RecitationRange:
+      additionalProperties: false
       type: object
       properties:
         start_page:
@@ -3237,6 +3303,7 @@ components:
       type: string
       enum: [teacher, student]
     CreateMistakeInput:
+      additionalProperties: false
       type: object
       required: [ayah_id, word_index, mistake_type]
       properties:
@@ -3258,6 +3325,7 @@ components:
           type: [string, 'null']
           format: uuid
     UpdateMistakeInput:
+      additionalProperties: false
       type: object
       minProperties: 1
       properties:
@@ -3267,6 +3335,7 @@ components:
           type: [string, 'null']
           maxLength: 1000
     Mistake:
+      additionalProperties: false
       type: object
       required: [id, session_id, task_id, ayah_id, word_index, mistake_type, source, created_at]
       properties:
@@ -3300,6 +3369,7 @@ components:
           type: string
           format: date-time
     CreateNoteInput:
+      additionalProperties: false
       type: object
       required: [body]
       properties:
@@ -3311,6 +3381,7 @@ components:
           type: [string, 'null']
           format: uuid
     UpdateNoteInput:
+      additionalProperties: false
       type: object
       required: [body]
       properties:
@@ -3319,6 +3390,7 @@ components:
           minLength: 1
           maxLength: 2000
     Note:
+      additionalProperties: false
       type: object
       required: [id, body, author, created_at]
       properties:
@@ -3336,6 +3408,7 @@ components:
           type: string
           format: date-time
     UpsertEvaluationInput:
+      additionalProperties: false
       type: object
       required: [score]
       properties:
@@ -3347,6 +3420,7 @@ components:
           type: [string, 'null']
           maxLength: 2000
     Evaluation:
+      additionalProperties: false
       type: object
       required: [score, evaluator, evaluator_role]
       properties:
@@ -3364,6 +3438,7 @@ components:
           type: string
           format: date-time
     MushafState:
+      additionalProperties: false
       type: object
       properties:
         page_number:
@@ -3381,6 +3456,7 @@ components:
           type: [string, 'null']
           format: date-time
     UpdateMushafStateInput:
+      additionalProperties: false
       type: object
       required: [page_number]
       properties:
@@ -3398,6 +3474,7 @@ components:
           type: [string, 'null']
           format: uuid
     Surah:
+      additionalProperties: false
       type: object
       required: [id, number, name, ayah_count]
       properties:
@@ -3415,6 +3492,7 @@ components:
         revelation_place:
           type: [string, 'null']
     AyahWord:
+      additionalProperties: false
       type: object
       required: [index, text]
       properties:
@@ -3424,6 +3502,7 @@ components:
         text:
           type: string
     Ayah:
+      additionalProperties: false
       type: object
       required: [id, surah_id, number, page_number, text, words]
       properties:
@@ -3444,6 +3523,7 @@ components:
           items:
             $ref: '#/components/schemas/AyahWord'
     QuranPage:
+      additionalProperties: false
       type: object
       required: [page_number, surahs, ayahs]
       properties:
@@ -3458,14 +3538,17 @@ components:
           items:
             $ref: '#/components/schemas/Ayah'
     MushafStateResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [mushaf_state]
       properties:
-        data:
+        mushaf_state:
+          description: حالة المصحف التفاعلي الحالية.
           $ref: '#/components/schemas/MushafState'
     ReportStateEnum:
       $ref: '#/components/schemas/ReportState'
     SessionReport:
+      additionalProperties: false
       type: object
       required: [id, session_id, state, teacher_approval]
       properties:
@@ -3489,6 +3572,7 @@ components:
           type: string
           format: date-time
     Approval:
+      additionalProperties: false
       type: object
       properties:
         status:
@@ -3503,6 +3587,7 @@ components:
         note:
           type: [string, 'null']
     StudentAcknowledgment:
+      additionalProperties: false
       type: object
       properties:
         status:
@@ -3517,18 +3602,22 @@ components:
         note:
           type: [string, 'null']
     UpdateReportInput:
+      additionalProperties: false
       type: object
+      minProperties: 1
       properties:
         summary:
           type: [string, 'null']
           maxLength: 4000
     ApprovalInput:
+      additionalProperties: false
       type: object
       properties:
         note:
           type: [string, 'null']
           maxLength: 2000
     StudentAcknowledgmentInput:
+      additionalProperties: false
       type: object
       required: [action]
       properties:
@@ -3539,6 +3628,7 @@ components:
           type: [string, 'null']
           maxLength: 2000
     ReopenReportInput:
+      additionalProperties: false
       type: object
       required: [reason]
       properties:
@@ -3547,12 +3637,16 @@ components:
           minLength: 1
           maxLength: 1000
     SkipFollowUpInput:
+      additionalProperties: false
       type: object
+      required: [reason]
       properties:
         reason:
-          type: [string, 'null']
+          type: string
+          minLength: 1
           maxLength: 500
     RescheduleFollowUpInput:
+      additionalProperties: false
       type: object
       required: [scheduled_at]
       properties:
@@ -3565,6 +3659,7 @@ components:
           type: [string, 'null']
           maxLength: 500
     FollowUpItem:
+      additionalProperties: false
       type: object
       required: [id, student_id, task_type, scheduled_for, state, plan_detail]
       properties:
@@ -3610,32 +3705,40 @@ components:
           type: string
           format: date-time
     FollowUpItemResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [follow_up_item]
       properties:
-        data:
+        follow_up_item:
+          description: عنصر المتابعة المجدول.
           $ref: '#/components/schemas/FollowUpItem'
     FollowUpItemCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data, meta]
+      required: [follow_up_items, meta]
       properties:
-        data:
+        follow_up_items:
+          description: عناصر المتابعة المجدولة.
           type: array
           items:
             $ref: '#/components/schemas/FollowUpItem'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
     FollowUpPlanResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [follow_up_plan]
       properties:
-        data:
+        follow_up_plan:
+          description: خطة الطالب الحالية.
           $ref: '#/components/schemas/FollowUpPlan'
     AttendancePreferencesResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [attendance_preferences]
       properties:
-        data:
+        attendance_preferences:
+          description: تفضيلات حضور الطالب.
           $ref: '#/components/schemas/AttendancePreferences'
     AttendanceType:
       type: string
@@ -3644,6 +3747,7 @@ components:
       type: string
       enum: [draft, in_progress, completed, cancelled]
     TrackingUnitDetail:
+      additionalProperties: false
       type: object
       required: [unit, amount]
       properties:
@@ -3660,6 +3764,7 @@ components:
         ayah_id:
           type: [string, 'null']
     TrackingDetail:
+      additionalProperties: false
       type: object
       required: [id, uuid, tracking_type, from_unit, to_unit, actual_amount, status, score, gap]
       properties:
@@ -3702,6 +3807,7 @@ components:
           type: string
           format: date-time
     Tracking:
+      additionalProperties: false
       type: object
       required: [id, student_id, date, attendance_type, behavior_note, details]
       properties:
@@ -3737,10 +3843,12 @@ components:
           type: string
           format: date-time
     TrackingCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data, meta]
+      required: [trackings, meta]
       properties:
-        data:
+        trackings:
+          description: سجلات المتابعة اليومية.
           type: array
           items:
             $ref: '#/components/schemas/Tracking'
@@ -3748,41 +3856,107 @@ components:
           $ref: '#/components/schemas/PaginationMeta'
     Progress:
       type: object
+      additionalProperties: false
+      required: [student_id, last_completed, totals]
       properties:
         student_id:
           type: string
           format: uuid
         last_completed:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/RecitationRange'
+          $ref: '#/components/schemas/LastCompletedProgress'
         totals:
-          type: object
-          additionalProperties:
-            type: integer
-    Notification:
+          $ref: '#/components/schemas/ProgressTotals'
+    LastCompletedProgress:
       type: object
-      required: [id, type, title, body, read_at, created_at]
+      additionalProperties: false
+      required: [memorization, review, recitation]
+      properties:
+        memorization:
+          anyOf:
+            - $ref: '#/components/schemas/RecitationRange'
+            - type: 'null'
+        review:
+          anyOf:
+            - $ref: '#/components/schemas/RecitationRange'
+            - type: 'null'
+        recitation:
+          anyOf:
+            - $ref: '#/components/schemas/RecitationRange'
+            - type: 'null'
+    ProgressTotals:
+      type: object
+      additionalProperties: false
+      required: [total_sessions, total_tasks, total_mistakes, memorization_tasks, review_tasks, recitation_tasks]
+      properties:
+        total_sessions:
+          type: integer
+          minimum: 0
+        total_tasks:
+          type: integer
+          minimum: 0
+        total_mistakes:
+          type: integer
+          minimum: 0
+        memorization_tasks:
+          type: integer
+          minimum: 0
+        review_tasks:
+          type: integer
+          minimum: 0
+        recitation_tasks:
+          type: integer
+          minimum: 0
+    Notification:
+      additionalProperties: false
+      type: object
+      required: [id, type, title, body, payload, read_at, created_at]
       properties:
         id:
           type: string
           format: uuid
         type:
           type: string
+          enum: [registration_request, session_scheduled, session_started, session_ended, report_ready, follow_up_due, reminder, system]
         title:
           type: string
+          maxLength: 250
         body:
           type: string
-        data:
-          type: object
-          additionalProperties: true
+        payload:
+          $ref: '#/components/schemas/NotificationPayload'
         read_at:
           type: [string, 'null']
           format: date-time
         created_at:
           type: string
           format: date-time
+    NotificationPayload:
+      type: object
+      additionalProperties: false
+      required: [entity_type, entity_id, action]
+      properties:
+        event_type:
+          type: [string, 'null']
+        entity_type:
+          type: string
+          enum: [registration_request, halaqa, membership, follow_up_item, live_session, session_report, task, mistake]
+        entity_id:
+          type: string
+          format: uuid
+        session_id:
+          type: [string, 'null']
+          format: uuid
+        follow_up_item_id:
+          type: [string, 'null']
+          format: uuid
+        action:
+          type: string
+          enum: [open, accept, reject, join, review, acknowledge, reschedule]
+        action_path:
+          type: [string, 'null']
+          maxLength: 500
     RealtimeSession:
+      additionalProperties: false
       type: object
       required: [session_id, channel_name, websocket_url, expires_at, direct_p2p_only, signaling_transport, ice_candidate_policy]
       properties:
@@ -3813,6 +3987,7 @@ components:
           type: string
           format: date-time
     MessageResponse:
+      additionalProperties: false
       type: object
       required: [message]
       properties:
@@ -3820,34 +3995,67 @@ components:
           type: string
     Error:
       type: object
-      required: [code, message]
+      additionalProperties: false
+      required: [code, message, details]
       properties:
         code:
           type: string
         message:
           type: string
         details:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/ErrorDetails'
+    ErrorDetails:
+      type: object
+      additionalProperties: false
+      required: [request_id, field_errors, resource, resource_id, retry_after_seconds]
+      properties:
+        request_id:
+          type: [string, 'null']
+          format: uuid
+        field_errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldValidationError'
+        resource:
+          type: [string, 'null']
+        resource_id:
+          type: [string, 'null']
+          format: uuid
+        retry_after_seconds:
+          type: [integer, 'null']
+          minimum: 0
+    FieldValidationError:
+      type: object
+      additionalProperties: false
+      required: [field, messages]
+      properties:
+        field:
+          type: string
+        messages:
+          type: array
+          minItems: 1
+          items:
+            type: string
     ErrorResponse:
       type: object
+      additionalProperties: false
       required: [error]
       properties:
         error:
           $ref: '#/components/schemas/Error'
     ValidationErrorResponse:
       type: object
-      required: [message, errors]
+      additionalProperties: false
+      required: [message, field_errors]
       properties:
         message:
           type: string
-        errors:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              type: string
+        field_errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldValidationError'
     PaginationMeta:
+      additionalProperties: false
       type: object
       required: [current_page, last_page, per_page, total]
       properties:
@@ -3860,115 +4068,149 @@ components:
         total:
           type: integer
     HalaqaResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [halaqa]
       properties:
-        data:
+        halaqa:
+          description: بيانات الحلقة.
           $ref: '#/components/schemas/Halaqa'
     HalaqaCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data, meta]
+      required: [halaqas, meta]
       properties:
-        data:
+        halaqas:
+          description: قائمة حلقات المعلم أو الحلقات المتاحة.
           type: array
           items:
             $ref: '#/components/schemas/Halaqa'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
     StudentCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data, meta]
+      required: [students, meta]
       properties:
-        data:
+        students:
+          description: قائمة الطلاب التي يملك المعلم صلاحية رؤيتها.
           type: array
           items:
             $ref: '#/components/schemas/User'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
     MembershipResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [membership]
       properties:
-        data:
+        membership:
+          description: عضوية الطالب في الحلقة.
           $ref: '#/components/schemas/Membership'
     RegistrationResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [registration_request]
       properties:
-        data:
+        registration_request:
+          description: طلب التسجيل.
           $ref: '#/components/schemas/RegistrationRequest'
     RegistrationCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data, meta]
+      required: [registration_requests, meta]
       properties:
-        data:
+        registration_requests:
+          description: طلبات التسجيل المسموح بعرضها.
           type: array
           items:
             $ref: '#/components/schemas/RegistrationRequest'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
     SessionResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [session]
       properties:
-        data:
+        session:
+          description: الجلسة المباشرة.
           $ref: '#/components/schemas/Session'
     SessionCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data, meta]
+      required: [sessions, meta]
       properties:
-        data:
+        sessions:
+          description: الجلسات المسموح بعرضها.
           type: array
           items:
             $ref: '#/components/schemas/Session'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
     TaskResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [task]
       properties:
-        data:
+        task:
+          description: مهمة الجلسة.
           $ref: '#/components/schemas/SessionTask'
     TaskCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [tasks, meta]
       properties:
-        data:
+        tasks:
+          description: مهام الجلسة.
           type: array
           items:
             $ref: '#/components/schemas/SessionTask'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
     MistakeResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [mistake]
       properties:
-        data:
+        mistake:
+          description: خطأ التلاوة المرتبط بموضع قرآني.
           $ref: '#/components/schemas/Mistake'
     MistakeCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data, meta]
+      required: [mistakes, meta]
       properties:
-        data:
+        mistakes:
+          description: أخطاء التلاوة.
           type: array
           items:
             $ref: '#/components/schemas/Mistake'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
     NoteResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [note]
       properties:
-        data:
+        note:
+          description: ملاحظة المهمة.
           $ref: '#/components/schemas/Note'
     NoteCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [notes, meta]
       properties:
-        data:
+        notes:
+          description: ملاحظات المهمة.
           type: array
           items:
             $ref: '#/components/schemas/Note'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
     EvaluationResponse:
+      additionalProperties: false
       type: object
+      required: [teacher, student]
       properties:
         teacher:
           anyOf:
@@ -3979,60 +4221,78 @@ components:
             - $ref: '#/components/schemas/Evaluation'
             - type: 'null'
     QuranPageResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [quran_page]
       properties:
-        data:
+        quran_page:
+          description: صفحة المصحف.
           $ref: '#/components/schemas/QuranPage'
     AyahResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [ayah]
       properties:
-        data:
+        ayah:
+          description: الآية القرآنية.
           $ref: '#/components/schemas/Ayah'
     SurahCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [surahs, meta]
       properties:
-        data:
+        surahs:
+          description: قائمة السور.
           type: array
           items:
             $ref: '#/components/schemas/Surah'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
     ReportResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [report]
       properties:
-        data:
+        report:
+          description: تقرير الجلسة.
           $ref: '#/components/schemas/SessionReport'
     ReportCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data, meta]
+      required: [reports, meta]
       properties:
-        data:
+        reports:
+          description: تقارير الجلسات.
           type: array
           items:
             $ref: '#/components/schemas/SessionReport'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
     ProgressResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [progress]
       properties:
-        data:
+        progress:
+          description: تقدم الطالب.
           $ref: '#/components/schemas/Progress'
     NotificationCollectionResponse:
+      additionalProperties: false
       type: object
-      required: [data, meta]
+      required: [notifications, meta]
       properties:
-        data:
+        notifications:
+          description: إشعارات المستخدم.
           type: array
           items:
             $ref: '#/components/schemas/Notification'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
     RealtimeSessionResponse:
+      additionalProperties: false
       type: object
-      required: [data]
+      required: [realtime_session]
       properties:
-        data:
+        realtime_session:
+          description: إعدادات الاتصال المباشر والتفاوض.
           $ref: '#/components/schemas/RealtimeSession'

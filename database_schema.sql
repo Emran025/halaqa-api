@@ -647,7 +647,7 @@ CREATE TABLE notifications (
     type VARCHAR(80) NOT NULL,
     title VARCHAR(250) NOT NULL,
     body TEXT NOT NULL,
-    data JSON NULL,
+    payload JSON NOT NULL,
     read_at DATETIME NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,

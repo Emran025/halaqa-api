@@ -10,9 +10,9 @@
 | الإصدار | `/api/v1` |
 | المصادقة | `Authorization: Bearer <token>`، ويُصدر الرمز عند الدخول. |
 | نوع البيانات | `application/json`، باستثناء مصادقة قناة البث التي تستخدم `application/x-www-form-urlencoded`. |
-| استجابة المورد | كائن Laravel Resource داخل المفتاح `data`. |
-| القوائم | `data` مع `meta` للتقسيم والعدد. |
-| التحقق | `422` مع `message` و`errors` حسب أسماء الحقول. |
+| استجابة المورد | كائن Laravel Resource داخل مفتاح مجال صريح مثل `student_profile` أو `session` أو `report`. |
+| القوائم | مفتاح جمع دلالي مثل `students` أو `sessions` أو `mistakes` مع `meta` للتقسيم والعدد. |
+| التحقق | `422` مع `message` و`field_errors` كمصفوفة عناصر تحتوي `field` و`messages`. |
 | عدم المصادقة | `401`. |
 | عدم الصلاحية | `403`، دون كشف وجود مورد محمي عند الحاجة. |
 | المورد غير الموجود | `404`. |
@@ -210,3 +210,37 @@ Route
 ## قاعدة تغيير العقد
 
 أي تغيير في اسم حقل أو حالة أو مسار أو صلاحية أو كود استجابة يجب أن يبدأ بتعديل `openapi.yaml` وفهرس الوظائف، ثم تحديث Laravel Resources وRequests والاختبارات. لا تُعتبر ميزة مكتملة إذا لم تتطابق هذه الملفات الثلاثة معًا.
+
+
+## عقد أسماء الاستجابات على السلك
+
+لا تستخدم أي استجابة في هذا المشروع الحقل العام `data`. يجب أن تكون كل استجابة قابلة للتعرف بمجرد قراءة المفتاح الجذري، وفق الجدول التالي:
+
+| نوع الناتج | المفتاح الجذري الصريح |
+|---|---|
+| الحساب | `user` |
+| الملف التفصيلي للطالب | `student_profile` |
+| الملف التفصيلي للمعلم | `teacher_profile` |
+| بطاقة المعلم العامة | `teacher` |
+| وثيقة المعلم | `teacher_document` أو `documents` للقائمة |
+| الحلقة | `halaqa` أو `halaqas` للقائمة |
+| العضوية | `membership` |
+| طلب التسجيل | `registration_request` أو `registration_requests` للقائمة |
+| المتقدمون العموميون | `applicants` |
+| الخطة | `follow_up_plan` |
+| عنصر المتابعة | `follow_up_item` أو `follow_up_items` للقائمة |
+| الجلسة | `session` أو `sessions` للقائمة |
+| المهمة | `task` أو `tasks` للقائمة |
+| الخطأ | `mistake` أو `mistakes` للقائمة |
+| الملاحظة | `note` أو `notes` للقائمة |
+| التقييم | `teacher` و`student` |
+| صفحة المصحف | `quran_page` |
+| الآية | `ayah` |
+| السور | `surahs` |
+| التقرير | `report` أو `reports` للقائمة |
+| التقدم | `progress` |
+| الإشعارات | `notifications` |
+| إعداد الاتصال | `realtime_session` |
+| الأخطاء | `error` أو `field_errors` في أخطاء التحقق |
+
+يجب أن يحتوي كل مفتاح على مخطط OpenAPI مسمى يحدد `type` و`format` و`required` و`enum` و`minimum` و`maximum` و`nullable` حسب الحاجة. ويجب أن ترفض Laravel Form Requests الحقول غير المعرفة، وأن تستخدم Laravel API Resources نفس أسماء الحقول المعلنة هنا دون إعادة تغليفها في `data`.

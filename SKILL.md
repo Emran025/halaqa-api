@@ -33,7 +33,11 @@ description: Laravel architecture governance for AI agents. Use when creating, m
 
 إذا تعارضت البنية المرجعية مع بنية المشروع القائمة، فالأولوية للتوافق مع المشروع القائم بشرط تسجيل الاستثناء وعدم إنشاء نمطين متنافسين داخل الوحدة نفسها.
 
-## القواعد المعمارية غير القابلة للتفاوض
+## عقد الاتصال الصريح
+
+يجب أن يعرّف كل Request وResponse في `openapi.yaml` مخططًا مسمى بخصائصه وأنواعه وحدوده وقيمه المطلوبة. يُمنع استخدام خاصية عامة باسم `data` لاحتواء مورد أو قائمة، ويجب استخدام اسم المجال مثل `student`, `teacher_profile`, `sessions`, `mistakes`, أو `report`. تُمنع `additionalProperties: true` في أجسام المجال؛ وأي خريطة ديناميكية يجب تحويلها إلى مصفوفة عناصر ذات `key` و`value` معرفين أو إلى مخطط مسمى ومبرر.
+
+### القواعد المعمارية غير القابلة للتفاوض
 
 ### Controllers
 
@@ -136,6 +140,7 @@ description: Laravel architecture governance for AI agents. Use when creating, m
 - استخدم [PROJECT_ARCHITECTURE_POLICY.md](PROJECT_ARCHITECTURE_POLICY.md) كمرجع أعلى لنطاق النظام وقرارات Laravel-only وP2P-only.
 - استخدم [DATABASE_SCHEMA_CONTRACT.md](DATABASE_SCHEMA_CONTRACT.md) قبل إنشاء أو تعديل Model أو Migration أو علاقة تخزين.
 - استخدم [DATABASE_API_ALIGNMENT.md](DATABASE_API_ALIGNMENT.md) عند تغيير حقل أو Resource أو Endpoint للتأكد من تتبع البيانات بين API وMySQL.
+- استخدم `scripts/audit_openapi_explicit_contract.py` و`scripts/audit_openapi_nested_objects.py` عند مراجعة اكتمال حقول API.
 - استخدم [references/canonical-tree.md](references/canonical-tree.md) عند إنشاء أو نقل ملفات.
 - استخدم [references/placement-rules.md](references/placement-rules.md) عند اختيار الطبقة المناسبة.
 - استخدم [references/realtime-and-webrtc.md](references/realtime-and-webrtc.md) عند بناء WebSocket أو WebRTC أو مزامنة المصحف.
