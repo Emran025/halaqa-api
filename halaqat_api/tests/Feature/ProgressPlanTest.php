@@ -53,6 +53,18 @@ class ProgressPlanTest extends TestCase
             ->assertOk()->assertJsonPath('follow_up_plan.details.0.task_type', 'memorization')->assertJsonMissingPath('data');
     }
 
+    public function test_student_can_read_tracking_collection_and_unrelated_teacher_is_forbidden(): void
+    {
+        $student = $this->registerStudent();
+        $this->withToken($student['token'])->getJson('/api/v1/students/'.$student['user']['id'].'/trackings')
+            ->assertOk()->assertJsonStructure(['trackings', 'meta'])->assertJsonMissingPath('data');
+
+        app('auth')->forgetGuards();
+        $teacher = $this->postJson('/api/v1/auth/register/teacher', ['name' => 'Other Teacher', 'username' => 'other_'.Str::lower(Str::random(6)), 'email' => 'other_'.Str::lower(Str::random(6)).'@example.test', 'password' => 'password123', 'password_confirmation' => 'password123', 'gender' => 'male', 'birth_date' => '1980-01-01', 'country' => 'Saudi Arabia', 'city' => 'Riyadh', 'phone' => '500'.random_int(1000000, 9999999), 'phone_zone' => '+966', 'qualification' => 'Ijazah', 'experience_years' => 5, 'documents' => [], 'client_operation_id' => (string) Str::uuid()])->assertCreated()->json();
+        app('auth')->forgetGuards();
+        $this->withToken($teacher['token'])->getJson('/api/v1/students/'.$student['user']['id'].'/trackings')->assertForbidden();
+    }
+
     public function test_unknown_progress_fields_are_rejected(): void
     {
         $student = $this->registerStudent();

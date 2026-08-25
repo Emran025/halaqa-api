@@ -22,3 +22,7 @@ CreateSessionRequest -> LiveSessionService -> LiveSession/HalaqaMembership/Track
 ## امتداد مهام الجلسة
 
 أضيف `POST /api/v1/sessions/{session}/tasks` وفق `CreateTaskInput`، مع Migration وModel وRequest وResource وخدمة داخل `LiveSessionService`. لا تُنشأ المهمة إلا من معلم الجلسة وفي حالة قابلة للإدارة، ويمنع تكرار `sequence_no`. أضيفت Migration `quran_range_units` قبل FK المهمة لأن عقد MySQL يربط النطاقين المخططين ببيانات المصحف المرجعية. يغطي اختبار الجلسة إنشاء المهمة بحالة `draft` ونوع التتبع والتسلسل.
+
+## امتداد سجل المتابعة
+
+أضيفت جداول `daily_trackings` و`tracking_details` وModel طبقي لها، مع `GET /api/v1/students/{student}/trackings` وRequest وResource صريحين. يقرأ الطالب سجله، ويقرأه المعلم المرتبط بعضوية فعالة فقط؛ لا يكفي حساب معلم غير مرتبط. عمليات إنشاء وتعديل تفاصيل الحضور والتفصيل الكامل ستضاف مع مسارات العقد الأخرى في دورة لاحقة قبل اعتبار التتبع مكتملًا.
