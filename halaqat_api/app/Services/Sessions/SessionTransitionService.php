@@ -2,6 +2,7 @@
 
 namespace App\Services\Sessions;
 
+use App\Events\Notifications\SessionEnded;
 use App\Exceptions\ApiConflictException;
 use App\Models\LiveSession;
 use App\Services\Reports\SessionReportService;
@@ -28,6 +29,7 @@ class SessionTransitionService
     {
         $ended = $this->transition($session, ['accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected'], ['state' => 'ended', 'end_reason' => 'participant_left', 'ended_at' => now()]);
         app(SessionReportService::class)->ensureForEndedSession($ended);
+        event(new SessionEnded($ended));
 
         return $ended;
     }
@@ -36,6 +38,7 @@ class SessionTransitionService
     {
         $ended = $this->transition($session, ['accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected'], ['state' => 'ended', 'end_reason' => $reason, 'ended_at' => now()]);
         app(SessionReportService::class)->ensureForEndedSession($ended);
+        event(new SessionEnded($ended));
 
         return $ended;
     }

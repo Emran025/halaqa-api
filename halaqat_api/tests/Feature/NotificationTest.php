@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Halaqa;
+use App\Models\HalaqaMembership;
 use App\Models\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -25,6 +27,30 @@ class NotificationTest extends TestCase
         $this->assertDatabaseHas('notifications', ['id' => $ownRead->id, 'read_at' => $ownRead->read_at]);
     }
 
+    public function test_domain_events_create_scoped_notifications_without_duplicates(): void
+    {
+        $teacher = $this->registerTeacher('notification_event_teacher');
+        $student = $this->registerStudent('notification_event_student');
+        $halaqa = Halaqa::create(['id' => (string) Str::uuid(), 'teacher_id' => $teacher['user']['id'], 'name' => 'Notification Event Halaqa', 'gender' => 'male', 'country' => 'Saudi Arabia', 'residence' => 'Riyadh', 'status' => 'active', 'max_students' => 10, 'timezone' => 'Asia/Riyadh']);
+        HalaqaMembership::create(['id' => (string) Str::uuid(), 'halaqa_id' => $halaqa->id, 'student_id' => $student['user']['id'], 'status' => 'active', 'joined_at' => now()]);
+        $sessionPayload = ['halaqa_id' => $halaqa->id, 'student_id' => $student['user']['id'], 'task_type' => 'memorization', 'scheduled_at' => null, 'client_operation_id' => (string) Str::uuid()];
+
+        $session = $this->withToken($teacher['token'])->postJson('/api/v1/sessions', $sessionPayload)->assertCreated()->json('session');
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->getJson('/api/v1/notifications?unread_only=true')->assertOk()->assertJsonCount(1, 'notifications')->assertJsonPath('notifications.0.type', 'session_scheduled');
+        $this->withToken($student['token'])->postJson('/api/v1/sessions/'.$session['id'].'/accept')->assertOk();
+        app('auth')->forgetGuards();
+        $this->withToken($teacher['token'])->postJson('/api/v1/sessions/'.$session['id'].'/end')->assertOk();
+        $approvalOperation = (string) Str::uuid();
+        $this->withToken($teacher['token'])->postJson('/api/v1/sessions/'.$session['id'].'/report/teacher-approval', ['client_operation_id' => $approvalOperation])->assertOk();
+        $this->withToken($teacher['token'])->postJson('/api/v1/sessions/'.$session['id'].'/report/teacher-approval', ['client_operation_id' => $approvalOperation])->assertOk();
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->getJson('/api/v1/notifications')->assertOk()->assertJsonCount(3, 'notifications');
+        $this->assertDatabaseCount('notifications', 4);
+        $this->assertDatabaseHas('notifications', ['user_id' => $student['user']['id'], 'type' => 'report_ready']);
+        $this->assertDatabaseHas('notifications', ['user_id' => $teacher['user']['id'], 'type' => 'session_ended']);
+    }
+
     public function test_mark_one_read_is_idempotent_and_mark_all_is_scoped_to_user(): void
     {
         $student = $this->registerStudent('notification_reader');
@@ -46,7 +72,12 @@ class NotificationTest extends TestCase
 
     private function createNotification(string $userId, string $type, string $title, string $body, array $payload, $readAt = null): Notification
     {
-        return Notification::create(['id' => (string) Str::uuid(), 'user_id' => $userId, 'type' => $type, 'title' => $title, 'body' => $body, 'payload' => $payload, 'read_at' => $readAt]);
+        return Notification::create(['id' => (string) Str::uuid(), 'user_id' => $userId, 'type' => $type, 'title' => $title, 'body' => $body, 'payload' => $payload, 'dedupe_key' => 'test:'.Str::uuid(), 'read_at' => $readAt]);
+    }
+
+    private function registerTeacher(string $prefix): array
+    {
+        return $this->postJson('/api/v1/auth/register/teacher', ['name' => $prefix, 'username' => $prefix.'_'.Str::lower(Str::random(6)), 'email' => $prefix.'_'.Str::lower(Str::random(6)).'@example.test', 'password' => 'password123', 'password_confirmation' => 'password123', 'gender' => 'male', 'birth_date' => '1980-01-01', 'country' => 'Saudi Arabia', 'city' => 'Riyadh', 'phone' => '500'.random_int(1000000, 9999999), 'phone_zone' => '+966', 'qualification' => 'Ijazah', 'experience_years' => 10, 'documents' => [], 'client_operation_id' => (string) Str::uuid()])->assertCreated()->json();
     }
 
     private function registerStudent(string $prefix): array

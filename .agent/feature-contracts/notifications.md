@@ -10,7 +10,7 @@
 - **مفتاح الاستجابة الجذري:** `notifications` للقائمة، ولا يعاد غلاف `data`.
 - **هل العملية متزامنة أم مؤجلة؟** متزامنة.
 - **هل البيانات رسمية محفوظة أم حدث لحظي مؤقت؟** الإشعار وpayload بيانات رسمية محفوظة؛ لا يحمل وسائط أو SDP أو ICE.
-- **آلية منع التكرار:** التعليم عملية idempotent بذاتها؛ تحديث `read_at` لا يكرر أثرًا، وتعليم الكل يحدّث غير المقروء فقط.
+- **آلية منع التكرار:** التعليم عملية idempotent بذاتها؛ تحديث `read_at` لا يكرر أثرًا، وتعليم الكل يحدّث غير المقروء فقط. أما إشعارات الأحداث فتستخدم `dedupe_key` إلزاميًا وفريدًا على مستوى الجدول.
 
 ## المدخلات
 
@@ -20,6 +20,7 @@
 | `page` | integer | اختياري | حد أدنى 1. |
 | `per_page` | integer | اختياري | من 1 إلى 100. |
 | `notificationId` | UUID | نعم في مسار التعليم الفردي | model binding؛ المورد غير الموجود أو غير المملوك يعاد كـ404. |
+| `dedupe_key` | string | نعم داخليًا | مفتاح فريد للإشعار الناتج عن حدث ومتلقيه، ولا يظهر في Resource. |
 
 ## المخرجات
 
@@ -47,6 +48,12 @@ app/Http/Resources/Api/V1/Notifications/NotificationCollectionResource.php
 app/Models/Notification.php
 app/Policies/NotificationPolicy.php
 app/Services/Notifications/NotificationService.php
+app/Events/Notifications/SessionScheduled.php
+app/Events/Notifications/SessionEnded.php
+app/Events/Notifications/SessionReportApproved.php
+app/Listeners/Notifications/CreateSessionScheduledNotification.php
+app/Listeners/Notifications/CreateSessionEndedNotifications.php
+app/Listeners/Notifications/CreateSessionReportReadyNotification.php
 database/migrations/2026_08_25_000019_create_notifications_table.php
 ```
 

@@ -2,6 +2,7 @@
 
 namespace App\Services\Sessions;
 
+use App\Events\Notifications\SessionScheduled;
 use App\Exceptions\ApiConflictException;
 use App\Models\DailyTracking;
 use App\Models\HalaqaMembership;
@@ -77,7 +78,10 @@ class LiveSessionService
                 throw new ApiConflictException('The tracking type is not available.', 'tracking_type_not_found', 'task_type', $data['task_type']);
             }
 
-            return LiveSession::create(['id' => (string) Str::uuid(), 'halaqa_id' => $data['halaqa_id'], 'teacher_id' => $teacher->id, 'student_id' => $data['student_id'], 'follow_up_item_id' => $data['follow_up_item_id'] ?? null, 'task_type_id' => $typeId, 'state' => 'requested', 'scheduled_at' => $data['scheduled_at'] ?? null, 'requested_at' => now(), 'direct_p2p_only' => true, 'client_operation_id' => $data['client_operation_id']])->load(['teacher', 'student', 'taskType']);
+            $session = LiveSession::create(['id' => (string) Str::uuid(), 'halaqa_id' => $data['halaqa_id'], 'teacher_id' => $teacher->id, 'student_id' => $data['student_id'], 'follow_up_item_id' => $data['follow_up_item_id'] ?? null, 'task_type_id' => $typeId, 'state' => 'requested', 'scheduled_at' => $data['scheduled_at'] ?? null, 'requested_at' => now(), 'direct_p2p_only' => true, 'client_operation_id' => $data['client_operation_id']])->load(['teacher', 'student', 'taskType']);
+            event(new SessionScheduled($session));
+
+            return $session;
         });
     }
 }

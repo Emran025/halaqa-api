@@ -11,7 +11,7 @@ class Notification extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'user_id', 'type', 'title', 'body', 'payload', 'read_at'];
+    protected $fillable = ['id', 'user_id', 'type', 'title', 'body', 'payload', 'dedupe_key', 'read_at'];
 
     protected function casts(): array
     {

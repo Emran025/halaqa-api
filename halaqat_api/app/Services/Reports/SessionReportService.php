@@ -2,6 +2,7 @@
 
 namespace App\Services\Reports;
 
+use App\Events\Notifications\SessionReportApproved;
 use App\Exceptions\ApiConflictException;
 use App\Models\LiveSession;
 use App\Models\SessionReport;
@@ -78,6 +79,7 @@ class SessionReportService
                 throw new ApiConflictException('Only an ended session can have an approved report.', 'report_session_not_ended', 'report', (string) $locked->id);
             }
             $locked->update(['state' => 'pending_student_acknowledgment', 'teacher_approved_by' => $actor->id, 'teacher_approved_at' => now(), 'teacher_approval_note' => $note, 'last_client_operation_id' => $operationId, 'last_operation_by_user_id' => $actor->id, 'last_operation_type' => 'approve', 'version' => $locked->version + 1]);
+            event(new SessionReportApproved($locked));
 
             return $this->load($locked);
         });

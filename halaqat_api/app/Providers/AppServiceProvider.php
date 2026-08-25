@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Events\Notifications\SessionEnded;
+use App\Events\Notifications\SessionReportApproved;
+use App\Events\Notifications\SessionScheduled;
+use App\Listeners\Notifications\CreateSessionEndedNotifications;
+use App\Listeners\Notifications\CreateSessionReportReadyNotification;
+use App\Listeners\Notifications\CreateSessionScheduledNotification;
 use App\Models\FollowUpItem;
 use App\Models\LiveSession;
 use App\Models\Mistake;
@@ -17,6 +23,7 @@ use App\Policies\SessionReportPolicy;
 use App\Policies\SessionTaskPolicy;
 use App\Policies\StudentLearningPolicy;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -35,6 +42,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Event::listen(SessionScheduled::class, CreateSessionScheduledNotification::class);
+        Event::listen(SessionEnded::class, CreateSessionEndedNotifications::class);
+        Event::listen(SessionReportApproved::class, CreateSessionReportReadyNotification::class);
+
         Gate::policy(User::class, StudentLearningPolicy::class);
         Gate::policy(FollowUpItem::class, FollowUpItemPolicy::class);
         Gate::policy(LiveSession::class, LiveSessionPolicy::class);
