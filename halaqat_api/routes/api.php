@@ -14,6 +14,10 @@ use App\Http\Controllers\Api\V1\Memberships\AssignStudentToHalaqaController;
 use App\Http\Controllers\Api\V1\Memberships\ListHalaqaStudentsController;
 use App\Http\Controllers\Api\V1\Memberships\RemoveStudentFromHalaqaController;
 use App\Http\Controllers\Api\V1\Memberships\UpdateMembershipController;
+use App\Http\Controllers\Api\V1\Progress\GetStudentAvailabilityController;
+use App\Http\Controllers\Api\V1\Progress\GetStudentFollowUpPlanController;
+use App\Http\Controllers\Api\V1\Progress\UpdateStudentAvailabilityController;
+use App\Http\Controllers\Api\V1\Progress\UpdateStudentFollowUpPlanController;
 use App\Http\Controllers\Api\V1\Registrations\CancelRegistrationRequestController;
 use App\Http\Controllers\Api\V1\Registrations\CreateRegistrationRequestController;
 use App\Http\Controllers\Api\V1\Registrations\GetRegistrationRequestController;
@@ -21,6 +25,7 @@ use App\Http\Controllers\Api\V1\Registrations\ListRegistrationRequestsController
 use App\Http\Controllers\Api\V1\Registrations\RegistrationDecisionController;
 use App\Models\HalaqaMembership;
 use App\Models\RegistrationRequest;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -58,5 +63,10 @@ Route::prefix('v1')->group(function (): void {
 
         Route::model('membership', HalaqaMembership::class);
         Route::model('registrationRequest', RegistrationRequest::class);
+        Route::get('students/{student}/availability', GetStudentAvailabilityController::class);
+        Route::put('students/{student}/availability', UpdateStudentAvailabilityController::class);
+        Route::get('students/{student}/follow-up-plan', GetStudentFollowUpPlanController::class);
+        Route::put('students/{student}/follow-up-plan', UpdateStudentFollowUpPlanController::class);
+        Route::model('student', User::class);
     });
 });
