@@ -29,6 +29,10 @@ use App\Http\Controllers\Api\V1\Registrations\CreateRegistrationRequestControlle
 use App\Http\Controllers\Api\V1\Registrations\GetRegistrationRequestController;
 use App\Http\Controllers\Api\V1\Registrations\ListRegistrationRequestsController;
 use App\Http\Controllers\Api\V1\Registrations\RegistrationDecisionController;
+use App\Http\Controllers\Api\V1\Reports\GetSessionReportController;
+use App\Http\Controllers\Api\V1\Reports\ListStudentReportsController;
+use App\Http\Controllers\Api\V1\Reports\SessionReportActionController;
+use App\Http\Controllers\Api\V1\Reports\UpdateSessionReportController;
 use App\Http\Controllers\Api\V1\Sessions\AcceptSessionController;
 use App\Http\Controllers\Api\V1\Sessions\CancelSessionController;
 use App\Http\Controllers\Api\V1\Sessions\CreateMistakeController;
@@ -107,6 +111,7 @@ Route::prefix('v1')->group(function (): void {
         Route::put('students/{student}/follow-up-plan', UpdateStudentFollowUpPlanController::class);
         Route::get('students/{student}/trackings', ListStudentTrackingsController::class);
         Route::get('students/{student}/mistakes', ListStudentMistakesController::class);
+        Route::get('students/{student}/reports', ListStudentReportsController::class);
         Route::get('follow-up-items', ListFollowUpItemsController::class);
         Route::post('follow-up-items/{followUpItem}/complete', [FollowUpItemActionController::class, 'complete']);
         Route::post('follow-up-items/{followUpItem}/skip', [FollowUpItemActionController::class, 'skip']);
@@ -123,6 +128,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('sessions/{session}/reject', RejectSessionController::class);
         Route::post('sessions/{session}/leave', LeaveSessionController::class);
         Route::post('sessions/{session}/end', EndSessionController::class);
+        Route::get('sessions/{session}/report', GetSessionReportController::class);
+        Route::patch('sessions/{session}/report', UpdateSessionReportController::class);
+        Route::post('sessions/{session}/report/teacher-approval', [SessionReportActionController::class, 'approve']);
+        Route::post('sessions/{session}/report/student-acknowledgment', [SessionReportActionController::class, 'acknowledge']);
+        Route::post('sessions/{session}/report/reopen', [SessionReportActionController::class, 'reopen']);
         Route::post('sessions/{session}/reconnect', ReconnectSessionController::class);
         Route::get('sessions/{session}/realtime', GetRealtimeSessionController::class);
         Route::get('sessions/{session}/mushaf-state', GetMushafStateController::class);

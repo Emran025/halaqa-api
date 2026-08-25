@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SessionTask extends Model
@@ -27,6 +28,11 @@ class SessionTask extends Model
     public function trackingDetail(): HasOne
     {
         return $this->hasOne(TrackingDetail::class, 'session_task_id');
+    }
+
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(TaskEvaluation::class, 'session_task_id');
     }
 
     public function trackingType(): BelongsTo

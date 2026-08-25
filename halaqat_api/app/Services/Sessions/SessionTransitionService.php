@@ -4,6 +4,7 @@ namespace App\Services\Sessions;
 
 use App\Exceptions\ApiConflictException;
 use App\Models\LiveSession;
+use App\Services\Reports\SessionReportService;
 use Illuminate\Support\Facades\DB;
 
 class SessionTransitionService
@@ -25,12 +26,18 @@ class SessionTransitionService
 
     public function leave(LiveSession $session): LiveSession
     {
-        return $this->transition($session, ['accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected'], ['state' => 'ended', 'end_reason' => 'participant_left', 'ended_at' => now()]);
+        $ended = $this->transition($session, ['accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected'], ['state' => 'ended', 'end_reason' => 'participant_left', 'ended_at' => now()]);
+        app(SessionReportService::class)->ensureForEndedSession($ended);
+
+        return $ended;
     }
 
     public function end(LiveSession $session, ?string $reason = null): LiveSession
     {
-        return $this->transition($session, ['accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected'], ['state' => 'ended', 'end_reason' => $reason, 'ended_at' => now()]);
+        $ended = $this->transition($session, ['accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected'], ['state' => 'ended', 'end_reason' => $reason, 'ended_at' => now()]);
+        app(SessionReportService::class)->ensureForEndedSession($ended);
+
+        return $ended;
     }
 
     private function transition(LiveSession $session, array $fromStates, array $changes): LiveSession

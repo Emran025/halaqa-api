@@ -31,6 +31,8 @@
 | التنبيه | `notifications` | `Notification` | `/notifications`, القراءة | `NotificationResource`, `MarkNotificationReadService` |
 | التنفيذ المؤجل | `jobs`, `failed_jobs` | لا يعرض مباشرة | توليد الجدولة وإرسال التنبيهات وإعادة المحاولة | Laravel Job + Service |
 
+| تقرير الجلسة | `session_reports` | `SessionReport`, `ReportResponse`, `ReportCollectionResponse` | إنشاء تلقائي عند إنهاء الجلسة، عرض الطرفين، تعديل الملخص للمعلم، اعتماد المعلم، إقرار/تعليق الطالب، إعادة الفتح، وقائمة تقارير الطالب | `SessionReportService` مع `SessionReportPolicy` وحقول idempotency للعمليات القابلة لإعادة المحاولة |
+
 ## المصحف والتتبع
 
 | البيانات | جداول التخزين | مخططات OpenAPI | العمليات الرئيسية |
