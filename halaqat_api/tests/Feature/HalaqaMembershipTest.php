@@ -50,12 +50,73 @@ class HalaqaMembershipTest extends TestCase
         $assigned->assertCreated()->assertJsonStructure(['membership' => ['id', 'halaqa_id', 'student', 'status', 'joined_at']])->assertJsonPath('membership.status', 'active');
 
         $membershipId = $assigned->json('membership.id');
-        $this->withToken($teacher['token'])->getJson('/api/v1/halaqas/'.$halaqaId.'/students')
-            ->assertOk()->assertJsonStructure(['students', 'pagination'])->assertJsonCount(1, 'students');
+        $studentsResponse = $this->withToken($teacher['token'])->getJson('/api/v1/halaqas/'.$halaqaId.'/students')
+            ->assertOk()->assertJsonStructure(['students', 'pagination'])->assertJsonCount(1, 'students')
+            ->assertJsonMissingPath('students.0.membership_id')->assertJsonMissingPath('memberships');
+        $this->assertNotContains($membershipId, array_column($studentsResponse->json('students'), 'id'));
         $this->withToken($teacher['token'])->patchJson('/api/v1/halaqas/'.$halaqaId.'/memberships/'.$membershipId, ['status' => 'inactive', 'reason' => 'Pause requested'])
             ->assertOk()->assertJsonPath('membership.status', 'inactive');
         $this->withToken($teacher['token'])->deleteJson('/api/v1/halaqas/'.$halaqaId.'/memberships/'.$membershipId)->assertNoContent();
         $this->assertDatabaseHas('halaqa_memberships', ['id' => $membershipId, 'status' => 'removed']);
+    }
+
+    public function test_owner_can_list_memberships_with_ids_filters_and_pagination(): void
+    {
+        $teacher = $this->registerTeacher();
+        $student = $this->registerStudent();
+        app('auth')->forgetGuards();
+        $secondStudent = $this->registerStudent();
+        $halaqaId = $this->createHalaqa($teacher['token'])['halaqa']['id'];
+
+        $firstMembership = $this->withToken($teacher['token'])->postJson('/api/v1/halaqas/'.$halaqaId.'/students', ['student_id' => $student['user']['id']])->assertCreated()->json('membership');
+        app('auth')->forgetGuards();
+        $secondMembership = $this->withToken($teacher['token'])->postJson('/api/v1/halaqas/'.$halaqaId.'/students', ['student_id' => $secondStudent['user']['id']])->assertCreated()->json('membership');
+        app('auth')->forgetGuards();
+        $this->withToken($teacher['token'])->patchJson('/api/v1/halaqas/'.$halaqaId.'/memberships/'.$secondMembership['id'], ['status' => 'inactive', 'reason' => 'Pause'])->assertOk();
+        app('auth')->forgetGuards();
+        $thirdStudent = $this->registerStudent();
+        $otherHalaqaId = $this->createHalaqa($teacher['token'], ['name' => 'Other Halaqa'])['halaqa']['id'];
+        $foreignMembership = $this->withToken($teacher['token'])->postJson('/api/v1/halaqas/'.$otherHalaqaId.'/students', ['student_id' => $thirdStudent['user']['id']])->assertCreated()->json('membership');
+        app('auth')->forgetGuards();
+
+        $activeMemberships = $this->withToken($teacher['token'])->getJson('/api/v1/halaqas/'.$halaqaId.'/memberships?status=active&per_page=1')
+            ->assertOk();
+        $this->assertNotContains($foreignMembership['id'], array_column($activeMemberships->json('memberships'), 'id'));
+        $activeMemberships
+            ->assertJsonStructure(['memberships' => [['id', 'halaqa_id', 'student', 'status', 'joined_at']], 'meta' => ['current_page', 'last_page', 'per_page', 'total']])
+            ->assertJsonPath('memberships.0.id', $firstMembership['id'])
+            ->assertJsonPath('memberships.0.student.id', $student['user']['id'])
+            ->assertJsonPath('memberships.0.student.role', 'student')
+            ->assertJsonPath('memberships.0.status', 'active')
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonMissingPath('data');
+        app('auth')->forgetGuards();
+
+        $this->withToken($teacher['token'])->getJson('/api/v1/halaqas/'.$halaqaId.'/memberships?status=inactive&search='.urlencode($secondStudent['user']['name']))
+            ->assertOk()->assertJsonCount(1, 'memberships')->assertJsonPath('memberships.0.id', $secondMembership['id'])->assertJsonPath('memberships.0.status', 'inactive');
+        app('auth')->forgetGuards();
+
+        $this->withToken($teacher['token'])->getJson('/api/v1/halaqas/'.$halaqaId.'/memberships?per_page=1&page=2')
+            ->assertOk()->assertJsonCount(1, 'memberships')->assertJsonPath('meta.current_page', 2)->assertJsonPath('meta.last_page', 2);
+    }
+
+    public function test_membership_listing_is_owner_only_and_rejects_invalid_status(): void
+    {
+        $teacher = $this->registerTeacher();
+        $student = $this->registerStudent();
+        $halaqaId = $this->createHalaqa($teacher['token'])['halaqa']['id'];
+        $this->withToken($teacher['token'])->postJson('/api/v1/halaqas/'.$halaqaId.'/students', ['student_id' => $student['user']['id']])->assertCreated();
+        app('auth')->forgetGuards();
+        $otherTeacher = $this->registerTeacher();
+
+        $this->withToken($otherTeacher['token'])->getJson('/api/v1/halaqas/'.$halaqaId.'/memberships')
+            ->assertForbidden()->assertJsonMissingPath('memberships');
+        app('auth')->forgetGuards();
+        $this->withToken($student['token'])->getJson('/api/v1/halaqas/'.$halaqaId.'/memberships')
+            ->assertForbidden()->assertJsonMissingPath('memberships');
+        app('auth')->forgetGuards();
+        $this->withToken($teacher['token'])->getJson('/api/v1/halaqas/'.$halaqaId.'/memberships?status=pending')
+            ->assertUnprocessable()->assertJsonPath('field_errors.0.field', 'status');
     }
 
     public function test_capacity_gender_duplicate_and_role_rules_are_enforced(): void

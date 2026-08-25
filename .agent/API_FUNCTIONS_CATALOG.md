@@ -64,7 +64,8 @@
 | تعديل حلقة | `PATCH /halaqas/{halaqaId}` | المعلم المالك | `HalaqaPolicy@update`. |
 | تفعيل حلقة | `POST /halaqas/{halaqaId}/activate` | المعلم المالك | `HalaqaPolicy@activate`. |
 | إيقاف حلقة | `POST /halaqas/{halaqaId}/deactivate` | المعلم المالك | `HalaqaPolicy@deactivate`. |
-| قائمة طلاب الحلقة | `GET /halaqas/{halaqaId}/students` | المعلم المالك | `HalaqaPolicy@viewStudents`. |
+| قائمة طلاب الحلقة | `GET /halaqas/{halaqaId}/students` | المعلم المالك | `HalaqaPolicy@viewStudents`. تعيد User objects فقط لأغراض العرض، ولا تُستخدم لاكتشاف معرف العضوية. |
+| قائمة عضويات الحلقة | `GET /halaqas/{halaqaId}/memberships` | المعلم المالك | `HalaqaPolicy@manageMembers`. تعيد Membership objects مع `membership.id` لإدارة التحديث والإزالة، مع status/search/page/per_page. |
 | إسناد طالب مقبول | `POST /halaqas/{halaqaId}/students` | المعلم المالك | `AssignStudentToHalaqaService`. |
 | تحديث حالة العضوية | `PATCH /halaqas/{halaqaId}/memberships/{membershipId}` | المعلم المالك | `MembershipPolicy@update`. |
 | إزالة الطالب دون حذف التاريخ | `DELETE /halaqas/{halaqaId}/memberships/{membershipId}` | المعلم المالك | `RemoveStudentFromHalaqaService`. |

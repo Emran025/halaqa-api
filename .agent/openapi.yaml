@@ -804,6 +804,32 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /halaqas/{halaqaId}/memberships:
+    parameters:
+      - $ref: '#/components/parameters/HalaqaId'
+    get:
+      tags: [Halaqas, Memberships]
+      summary: قائمة عضويات الحلقة لإدارة دورة حياة العضوية
+      description: List the halaqa memberships that the current user is authorized to manage.
+      operationId: listHalaqaMemberships
+      parameters:
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: عضويات الحلقة مع معرف العضوية والطالب المسموح بعرضه
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipCollectionResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /halaqas/{halaqaId}/memberships/{membershipId}:
     parameters:
       - $ref: '#/components/parameters/HalaqaId'
@@ -4483,6 +4509,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/User'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    MembershipCollectionResponse:
+      additionalProperties: false
+      type: object
+      required: [memberships, meta]
+      properties:
+        memberships:
+          description: عضويات الحلقة التي يملك المستخدم الحالي صلاحية إدارتها.
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
     MembershipResponse:
