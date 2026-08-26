@@ -5,6 +5,7 @@ namespace App\Services\Auth;
 use App\Exceptions\ApiConflictException;
 use App\Models\FollowUpPlan;
 use App\Models\FollowUpPlanDetail;
+use App\Models\Notification;
 use App\Models\RegistrationRequest;
 use App\Models\RegistrationRequestAvailability;
 use App\Models\RegistrationRequestAvailabilitySlot;
@@ -287,6 +288,26 @@ class AuthService
                 'available_to' => $slot['to'],
                 'is_preferred' => $slot['preferred'] ?? false,
             ]);
+        }
+
+        $teacherIds = $teacher !== null
+            ? collect([$teacher->id])
+            : User::query()->where('role', 'teacher')->where('status', 'active')
+                ->where('gender', $student->gender)
+                ->where('country', $student->country)
+                ->pluck('id');
+        foreach ($teacherIds as $teacherId) {
+            Notification::firstOrCreate(
+                ['dedupe_key' => 'registration-request:submitted:'.$request->id.':'.$teacherId],
+                [
+                    'id' => (string) Str::uuid(),
+                    'user_id' => $teacherId,
+                    'type' => 'registration_request',
+                    'title' => 'Registration request update',
+                    'body' => 'A new student registration request is available.',
+                    'payload' => ['entity_type' => 'registration_request', 'entity_id' => (string) $request->id, 'action' => 'view'],
+                ],
+            );
         }
 
         return $request;

@@ -46,7 +46,8 @@ class NotificationTest extends TestCase
         $this->withToken($teacher['token'])->postJson('/api/v1/sessions/'.$session['id'].'/report/teacher-approval', ['client_operation_id' => $approvalOperation])->assertOk();
         app('auth')->forgetGuards();
         $this->withToken($student['token'])->getJson('/api/v1/notifications')->assertOk()->assertJsonCount(3, 'notifications');
-        $this->assertDatabaseCount('notifications', 4);
+        $this->assertDatabaseCount('notifications', 5);
+        $this->assertDatabaseHas('notifications', ['user_id' => $teacher['user']['id'], 'type' => 'registration_request']);
         $this->assertDatabaseHas('notifications', ['user_id' => $student['user']['id'], 'type' => 'report_ready']);
         $this->assertDatabaseHas('notifications', ['user_id' => $teacher['user']['id'], 'type' => 'session_ended']);
     }

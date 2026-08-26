@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Console\Commands\ProcessFollowUpAutomationCommand;
 use App\Console\Commands\Realtime\RunWebSocketServerCommand;
 use App\Events\LiveSession\LiveSessionRealtimeEvent;
 use App\Events\Notifications\SessionEnded;
@@ -39,7 +40,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->commands([RunWebSocketServerCommand::class]);
+        $this->commands([RunWebSocketServerCommand::class, ProcessFollowUpAutomationCommand::class]);
     }
 
     /**

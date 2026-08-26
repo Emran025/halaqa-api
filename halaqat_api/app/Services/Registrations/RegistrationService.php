@@ -5,6 +5,7 @@ namespace App\Services\Registrations;
 use App\Exceptions\ApiConflictException;
 use App\Models\Halaqa;
 use App\Models\HalaqaMembership;
+use App\Models\Notification;
 use App\Models\RegistrationRequest;
 use App\Models\RegistrationRequestAvailability;
 use App\Models\RegistrationRequestAvailabilitySlot;
@@ -78,6 +79,8 @@ class RegistrationService
                 ]);
             }
 
+            $this->notifySubmitted($request->fresh(['student', 'teacher']));
+
             return $request->load(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
         });
     }
@@ -104,6 +107,8 @@ class RegistrationService
                 }
                 HalaqaMembership::create(['id' => (string) Str::uuid(), 'halaqa_id' => $halaqa->id, 'student_id' => $request->student_id, 'status' => 'active', 'joined_at' => now()]);
             }
+
+            $this->notifyStudent($request, 'accepted', 'Your registration request was accepted.');
 
             return $request->fresh(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
         });
@@ -132,6 +137,40 @@ class RegistrationService
         });
     }
 
+    private function notifySubmitted(RegistrationRequest $request): void
+    {
+        $teacherIds = $request->teacher_id !== null
+            ? collect([$request->teacher_id])
+            : User::query()->where('role', 'teacher')->where('status', 'active')
+                ->where('gender', $request->student->gender)
+                ->where('country', $request->student->country)
+                ->pluck('id');
+
+        foreach ($teacherIds as $teacherId) {
+            $this->createNotification((string) $teacherId, 'submitted', $request, 'A new student registration request is available.');
+        }
+    }
+
+    private function notifyStudent(RegistrationRequest $request, string $event, string $message): void
+    {
+        $this->createNotification((string) $request->student_id, $event, $request, $message);
+    }
+
+    private function createNotification(string $userId, string $event, RegistrationRequest $request, string $message): void
+    {
+        Notification::firstOrCreate(
+            ['dedupe_key' => 'registration-request:'.$event.':'.$request->id.':'.$userId],
+            [
+                'id' => (string) Str::uuid(),
+                'user_id' => $userId,
+                'type' => 'registration_request',
+                'title' => 'Registration request update',
+                'body' => $message,
+                'payload' => ['entity_type' => 'registration_request', 'entity_id' => (string) $request->id, 'action' => 'view'],
+            ],
+        );
+    }
+
     private function decide(RegistrationRequest $registrationRequest, User $teacher, string $state, ?string $note): RegistrationRequest
     {
         return DB::transaction(function () use ($registrationRequest, $teacher, $state, $note): RegistrationRequest {
@@ -143,6 +182,8 @@ class RegistrationService
                 throw new ApiConflictException('The teacher cannot decide this request.', 'registration_target_forbidden', 'registration_request', $request->id);
             }
             $request->update(['teacher_id' => $teacher->id, 'state' => $state, 'decision_note' => $note, 'decided_by_teacher_id' => $teacher->id, 'decided_at' => now()]);
+            $message = $state === 'rejected' ? 'Your registration request was rejected.' : 'Your registration request needs additional information.';
+            $this->notifyStudent($request, $state, $message);
 
             return $request->fresh(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
         });
