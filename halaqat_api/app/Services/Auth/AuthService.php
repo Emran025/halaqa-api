@@ -6,6 +6,8 @@ use App\Exceptions\ApiConflictException;
 use App\Models\FollowUpPlan;
 use App\Models\FollowUpPlanDetail;
 use App\Models\RegistrationRequest;
+use App\Models\RegistrationRequestAvailability;
+use App\Models\RegistrationRequestAvailabilitySlot;
 use App\Models\RegistrationRequestProfile;
 use App\Models\StudentAvailabilityProfile;
 use App\Models\StudentAvailabilitySlot;
@@ -270,6 +272,22 @@ class AuthService
             'stop_reasons' => $previous['stop_reasons'] ?? null,
             'profile_bio' => $data['profile_bio'] ?? null,
         ]);
+
+        $attendance = $data['attendance_preferences'];
+        RegistrationRequestAvailability::create([
+            'registration_request_id' => $request->id,
+            'timezone' => $attendance['timezone'],
+            'preferred_session_duration_minutes' => $attendance['preferred_session_duration_minutes'] ?? 30,
+        ]);
+        foreach ($attendance['weekly_slots'] as $slot) {
+            RegistrationRequestAvailabilitySlot::create([
+                'registration_request_id' => $request->id,
+                'day_of_week' => $slot['day_of_week'],
+                'available_from' => $slot['from'],
+                'available_to' => $slot['to'],
+                'is_preferred' => $slot['preferred'] ?? false,
+            ]);
+        }
 
         return $request;
     }

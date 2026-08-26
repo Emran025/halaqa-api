@@ -4,6 +4,8 @@ namespace App\Http\Resources\Api\V1\Registrations;
 
 use App\Http\Resources\Api\V1\Halaqas\HalaqaPublicSummaryResource;
 use App\Http\Resources\Api\V1\Halaqas\TeacherPublicSummaryResource;
+use App\Http\Resources\Api\V1\Progress\AttendancePreferencesResource;
+use App\Http\Resources\Api\V1\Progress\FollowUpPlanResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -38,8 +40,12 @@ class RegistrationRequestResource extends JsonResource
                 'memorized_surah_ids' => $profile->memorized_surah_ids ?? [],
                 'last_completed_unit' => $profile->last_completed_unit,
             ] : null,
-            'attendance_preferences' => $fullDetailsVisible ? $this->student?->studentProfile?->availability : null,
-            'follow_up_plan' => $fullDetailsVisible ? $this->student?->studentProfile?->followUpPlan : null,
+            'attendance_preferences' => $fullDetailsVisible && $this->availability
+                ? new AttendancePreferencesResource($this->availability)
+                : null,
+            'follow_up_plan' => $fullDetailsVisible && $this->student?->studentProfile?->followUpPlan
+                ? new FollowUpPlanResource($this->student->studentProfile->followUpPlan)
+                : null,
             'state' => $this->state,
             'visibility' => $isStudent ? 'student_visible' : ($isAcceptedTeacher ? 'relationship_visible' : 'public_summary'),
             'message' => $this->public_message,

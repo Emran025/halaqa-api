@@ -53,4 +53,9 @@ class RegistrationRequest extends Model
     {
         return $this->hasOne(RegistrationRequestProfile::class, 'registration_request_id');
     }
+
+    public function availability(): HasOne
+    {
+        return $this->hasOne(RegistrationRequestAvailability::class, 'registration_request_id');
+    }
 }

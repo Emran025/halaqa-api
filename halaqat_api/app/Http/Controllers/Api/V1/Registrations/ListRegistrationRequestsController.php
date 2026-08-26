@@ -12,7 +12,7 @@ class ListRegistrationRequestsController extends Controller
     public function __invoke(Request $request): RegistrationCollectionResource
     {
         $user = $request->user();
-        $query = RegistrationRequest::query()->with(['student', 'student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile']);
+        $query = RegistrationRequest::query()->with(['student', 'student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
 
         if ($user->isStudent()) {
             $query->where('student_id', $user->id);

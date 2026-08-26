@@ -34,6 +34,8 @@ class AuthRegistrationTest extends TestCase
         $this->assertSame('page', json_decode($registrationProfile->last_completed_unit, true)['unit']);
         $this->assertDatabaseHas('registration_requests', ['student_id' => $userId, 'routing_mode' => 'all_available_teachers', 'state' => 'pending']);
         $this->assertDatabaseCount('registration_request_profiles', 1);
+        $this->assertDatabaseHas('registration_request_availability', ['timezone' => 'Asia/Riyadh', 'preferred_session_duration_minutes' => 30]);
+        $this->assertDatabaseCount('registration_request_availability_slots', 1);
         $this->assertDatabaseHas('student_availability_profiles', ['student_id' => $userId, 'timezone' => 'Asia/Riyadh']);
         $this->assertDatabaseCount('student_availability_slots', 1);
         $this->assertDatabaseHas('follow_up_plans', ['student_id' => $userId, 'frequency' => 'twiceAWeek', 'timezone' => 'Asia/Riyadh']);

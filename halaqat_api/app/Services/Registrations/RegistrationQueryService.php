@@ -12,7 +12,7 @@ class RegistrationQueryService
     public function halaqaInbox(Halaqa $halaqa, array $filters): LengthAwarePaginator
     {
         $query = RegistrationRequest::query()
-            ->with(['student', 'student.studentProfile', 'teacher.teacherProfile', 'requestedHalaqa', 'profile'])
+            ->with(['student', 'student.studentProfile', 'teacher.teacherProfile', 'requestedHalaqa', 'profile', 'availability.slots'])
             ->where('requested_halaqa_id', $halaqa->id)
             ->when(isset($filters['state']), fn ($query) => $query->where('state', $filters['state']))
             ->latest('submitted_at');
@@ -24,7 +24,7 @@ class RegistrationQueryService
     {
         $state = $filters['state'] ?? 'pending';
         $query = RegistrationRequest::query()
-            ->with(['student', 'student.studentProfile', 'teacher.teacherProfile', 'requestedHalaqa', 'profile'])
+            ->with(['student', 'student.studentProfile', 'teacher.teacherProfile', 'requestedHalaqa', 'profile', 'availability.slots'])
             ->where('state', $state)
             ->where(function ($query) use ($teacher): void {
                 $query->where('teacher_id', $teacher->id)

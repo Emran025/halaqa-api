@@ -6,6 +6,8 @@ use App\Exceptions\ApiConflictException;
 use App\Models\Halaqa;
 use App\Models\HalaqaMembership;
 use App\Models\RegistrationRequest;
+use App\Models\RegistrationRequestAvailability;
+use App\Models\RegistrationRequestAvailabilitySlot;
 use App\Models\RegistrationRequestProfile;
 use App\Models\TeacherProfile;
 use App\Models\User;
@@ -19,7 +21,7 @@ class RegistrationService
         return DB::transaction(function () use ($student, $data): RegistrationRequest {
             $existing = RegistrationRequest::query()->where('student_id', $student->id)->where('client_operation_id', $data['client_operation_id'])->first();
             if ($existing !== null) {
-                return $existing->load(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile']);
+                return $existing->load(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
             }
 
             $open = RegistrationRequest::query()->where('student_id', $student->id)->whereIn('state', ['pending', 'completion_requested'])->exists();
@@ -60,7 +62,23 @@ class RegistrationService
                 'profile_bio' => $profile['bio'] ?? null,
             ]);
 
-            return $request->load(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile']);
+            $attendance = $data['attendance_preferences'];
+            RegistrationRequestAvailability::create([
+                'registration_request_id' => $request->id,
+                'timezone' => $attendance['timezone'],
+                'preferred_session_duration_minutes' => $attendance['preferred_session_duration_minutes'] ?? 30,
+            ]);
+            foreach ($attendance['weekly_slots'] as $slot) {
+                RegistrationRequestAvailabilitySlot::create([
+                    'registration_request_id' => $request->id,
+                    'day_of_week' => $slot['day_of_week'],
+                    'available_from' => $slot['from'],
+                    'available_to' => $slot['to'],
+                    'is_preferred' => $slot['preferred'] ?? false,
+                ]);
+            }
+
+            return $request->load(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
         });
     }
 
@@ -87,7 +105,7 @@ class RegistrationService
                 HalaqaMembership::create(['id' => (string) Str::uuid(), 'halaqa_id' => $halaqa->id, 'student_id' => $request->student_id, 'status' => 'active', 'joined_at' => now()]);
             }
 
-            return $request->fresh(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile']);
+            return $request->fresh(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
         });
     }
 
@@ -126,7 +144,7 @@ class RegistrationService
             }
             $request->update(['teacher_id' => $teacher->id, 'state' => $state, 'decision_note' => $note, 'decided_by_teacher_id' => $teacher->id, 'decided_at' => now()]);
 
-            return $request->fresh(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile']);
+            return $request->fresh(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
         });
     }
 }
