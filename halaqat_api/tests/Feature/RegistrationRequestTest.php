@@ -19,7 +19,7 @@ class RegistrationRequestTest extends TestCase
 
         app('auth')->forgetGuards();
         $this->withToken($teacher['token'])->getJson('/api/v1/registration-requests')
-            ->assertOk()->assertJsonStructure(['registration_requests', 'pagination'])->assertJsonPath('registration_requests.0.profile', null);
+            ->assertOk()->assertJsonStructure(['registration_requests', 'meta'])->assertJsonPath('registration_requests.0.profile', null);
         $this->withToken($teacher['token'])->getJson('/api/v1/registration-requests/'.$registrationId)
             ->assertOk()->assertJsonPath('registration_request.visibility', 'public_summary')
             ->assertJsonPath('registration_request.profile', null);

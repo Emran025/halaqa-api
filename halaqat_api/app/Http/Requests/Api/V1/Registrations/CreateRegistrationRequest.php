@@ -10,7 +10,7 @@ class CreateRegistrationRequest extends StrictFormRequest
     protected array $allowedShape = [
         'teacher_code' => true, 'requested_halaqa_id' => true, 'message' => true, 'client_operation_id' => true,
         'profile' => ['gender' => true, 'birth_date' => true, 'country' => true, 'city' => true, 'residence' => true, 'phone' => true, 'phone_zone' => true, 'whatsapp_phone' => true, 'whatsapp_zone' => true, 'memorization_level' => true, 'review_level' => true, 'bio' => true],
-        'previous_memorization' => ['memorization_level' => true, 'review_level' => true, 'memorized_juz_count' => true, 'previous_teacher_notes' => true, 'stop_reasons' => true, 'memorized_surah_ids' => ['*' => []]],
+        'previous_memorization' => ['memorization_level' => true, 'review_level' => true, 'memorized_juz_count' => true, 'previous_teacher_notes' => true, 'stop_reasons' => true, 'memorized_surah_ids' => ['*' => []], 'last_completed_unit' => ['task_type' => true, 'unit' => true, 'amount' => true, 'notes' => true]],
         'attendance_preferences' => ['timezone' => true, 'weekly_slots' => ['*' => ['day_of_week' => true, 'from' => true, 'to' => true, 'preferred' => true]], 'preferred_session_duration_minutes' => true],
         'follow_up_plan' => ['frequency' => true, 'details' => ['*' => ['task_type' => true, 'unit' => true, 'amount' => true, 'notes' => true]], 'starts_on' => true, 'ends_on' => true],
     ];
@@ -44,6 +44,13 @@ class CreateRegistrationRequest extends StrictFormRequest
             'previous_memorization.memorized_juz_count' => ['nullable', 'numeric', 'min:0', 'max:30'],
             'previous_memorization.memorized_surah_ids' => ['nullable', 'array'],
             'previous_memorization.memorized_surah_ids.*' => ['integer', 'min:1', 'max:114'],
+            'previous_memorization.last_completed_unit' => ['sometimes', 'nullable', 'array'],
+            'previous_memorization.last_completed_unit.task_type' => ['required_with:previous_memorization.last_completed_unit', Rule::in(['memorization', 'review', 'recitation'])],
+            'previous_memorization.last_completed_unit.unit' => ['required_with:previous_memorization.last_completed_unit', Rule::in(['juz', 'hizb', 'halfHizb', 'quarterHizb', 'page'])],
+            'previous_memorization.last_completed_unit.amount' => ['required_with:previous_memorization.last_completed_unit', 'numeric', 'gt:0'],
+            'previous_memorization.last_completed_unit.notes' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'previous_memorization.previous_teacher_notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'previous_memorization.stop_reasons' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'attendance_preferences' => ['required', 'array'],
             'attendance_preferences.timezone' => ['required', 'timezone:all'],
             'attendance_preferences.weekly_slots' => ['required', 'array', 'min:1'],

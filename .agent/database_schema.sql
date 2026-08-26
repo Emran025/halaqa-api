@@ -182,6 +182,7 @@ CREATE TABLE registration_request_profiles (
     memorized_surah_ids JSON NULL,
     last_completed_unit JSON NULL,
     previous_memorization_notes TEXT NULL,
+    stop_reasons TEXT NULL,
     profile_bio TEXT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,

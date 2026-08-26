@@ -141,6 +141,73 @@ class ProfileManagementTest extends TestCase
         $this->assertDatabaseHas('teacher_documents', ['id' => $document->id, 'deleted_at' => null]);
     }
 
+    public function test_student_can_read_own_detailed_profile_but_unrelated_teacher_cannot(): void
+    {
+        $student = User::factory()->student()->create();
+        StudentProfile::create(['user_id' => $student->id]);
+        $teacher = User::factory()->teacher()->create();
+        $studentToken = $student->createToken('test')->plainTextToken;
+        $teacherToken = $teacher->createToken('test')->plainTextToken;
+
+        $this->withToken($studentToken)->getJson('/api/v1/students/'.$student->id)
+            ->assertOk()
+            ->assertJsonPath('student_profile.visibility', 'self');
+        app('auth')->forgetGuards();
+        $this->withToken($teacherToken)->getJson('/api/v1/students/'.$student->id)->assertForbidden();
+    }
+
+    public function test_student_can_discover_public_teachers_without_sensitive_fields(): void
+    {
+        $student = User::factory()->student()->create();
+        $teacher = User::factory()->teacher()->create([
+            'name' => 'Public Teacher',
+            'email' => 'public-teacher@example.test',
+            'phone' => '500000099',
+            'country' => 'Saudi Arabia',
+            'city' => 'Riyadh',
+        ]);
+        TeacherProfile::create([
+            'user_id' => $teacher->id,
+            'teacher_code' => 'TCH-PUBLIC-'.$teacher->id,
+            'qualification' => 'Ijazah',
+            'experience_years' => 10,
+            'bio' => 'Public biography',
+            'max_halaqas' => 2,
+        ]);
+        $token = $student->createToken('test')->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/v1/teachers?search=Public&per_page=10')
+            ->assertOk()
+            ->assertJsonStructure(['teachers', 'meta'])
+            ->assertJsonPath('teachers.0.display_name', 'Public Teacher')
+            ->assertJsonMissingPath('teachers.0.email')
+            ->assertJsonMissingPath('teachers.0.phone')
+            ->assertJsonMissingPath('data');
+
+        $this->withToken($token)->getJson('/api/v1/teachers/'.$teacher->id)
+            ->assertOk()
+            ->assertJsonPath('teacher.display_name', 'Public Teacher')
+            ->assertJsonPath('teacher.bio', 'Public biography')
+            ->assertJsonMissingPath('teacher.email')
+            ->assertJsonMissingPath('teacher.phone')
+            ->assertJsonMissingPath('teacher.documents');
+    }
+
+    public function test_teacher_list_is_restricted_to_students_and_query_is_strict(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        TeacherProfile::create(['user_id' => $teacher->id, 'teacher_code' => 'TCH-LIST-'.$teacher->id, 'qualification' => 'Ijazah']);
+        $token = $teacher->createToken('test')->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/v1/teachers')->assertForbidden();
+        app('auth')->forgetGuards();
+        $student = User::factory()->student()->create();
+        $studentToken = $student->createToken('test')->plainTextToken;
+        $this->withToken($studentToken)->getJson('/api/v1/teachers?unexpected=true')
+            ->assertUnprocessable()
+            ->assertJsonPath('field_errors.0.field', '_schema');
+    }
+
     public function test_student_profile_patch_can_update_attendance_and_follow_up_plan(): void
     {
         $student = User::factory()->student()->create();

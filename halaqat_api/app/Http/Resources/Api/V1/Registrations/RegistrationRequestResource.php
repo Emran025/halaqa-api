@@ -32,8 +32,11 @@ class RegistrationRequestResource extends JsonResource
             ] : null,
             'previous_memorization' => $fullDetailsVisible && $profile ? [
                 'memorization_level' => $profile->memorization_level, 'review_level' => $profile->review_level,
-                'memorized_juz_count' => $profile->memorized_juz_count, 'previous_teacher_notes' => $profile->previous_memorization_notes,
-                'stop_reasons' => null, 'memorized_surah_ids' => [],
+                'memorized_juz_count' => $profile->memorized_juz_count,
+                'previous_teacher_notes' => $profile->previous_memorization_notes,
+                'stop_reasons' => $profile->stop_reasons,
+                'memorized_surah_ids' => $profile->memorized_surah_ids ?? [],
+                'last_completed_unit' => $profile->last_completed_unit,
             ] : null,
             'attendance_preferences' => $fullDetailsVisible ? $this->student?->studentProfile?->availability : null,
             'follow_up_plan' => $fullDetailsVisible ? $this->student?->studentProfile?->followUpPlan : null,

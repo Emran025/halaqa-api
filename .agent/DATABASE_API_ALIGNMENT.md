@@ -9,7 +9,7 @@
 |---|---|---|---|---|
 | حساب الطالب | `users`, `student_profiles` | `StudentRegistrationInput`, `StudentProfile`, `StudentProfileResponse` | `POST /auth/register/student`, `GET/PATCH /me/student-profile` | `RegisterStudentService`, `StudentProfileResource` |
 | تسجيل المعلم | `users`, `teacher_profiles` | `TeacherRegistrationInput`, `TeacherProfile`, `TeacherProfileResponse` | `POST /auth/register/teacher`, `GET/PATCH /me/teacher-profile` | `RegisterTeacherService`, `TeacherProfileResource` |
-| وثائق المعلم | `teacher_documents` | `TeacherDocumentInput`, `TeacherDocumentUploadInput`, `TeacherDocument` | `POST/PATCH /me/teacher-documents`, `DELETE /me/teacher-documents/{documentId}` | `ManageTeacherDocumentService`, `TeacherDocumentResource` |
+| وثائق المعلم | `teacher_documents` | `TeacherDocumentInput`, `TeacherDocumentUploadInput`, `TeacherDocument` | `GET/POST /me/teacher-documents`, `DELETE /me/teacher-documents/{documentId}` | `TeacherDocumentService`, `TeacherDocumentResource` |
 | المصادقة | `personal_access_tokens`, `password_reset_tokens` | `LoginInput`, `AuthResponse`, `ForgotPasswordInput`, `ResetPasswordInput` | `/auth/login`, `/auth/logout`, `/auth/password/*` | `LoginService`, `PasswordService` |
 
 ## الحلقات والتسجيل
@@ -18,8 +18,8 @@
 |---|---|---|---|---|
 | الحلقة | `halaqas` | `CreateHalaqaInput`, `UpdateHalaqaInput`, `Halaqa` | `/halaqas` CRUD | `HalaqaPolicy`, `CreateHalaqaService`, `UpdateHalaqaService` |
 | العضوية | `halaqa_memberships` | `Membership`, `MembershipCollectionResponse`, `AssignStudentInput` | `GET /halaqas/{halaqaId}/memberships` لقائمة lifecycle المرقمة المملوكة للمعلم، وإسناد وإزالة الطالب؛ البحث في `student.name` فقط، ولا يغير `/students` | `HalaqaPolicy@manageMembers`, `MembershipQueryService`, `MembershipService`, `MembershipResource`, `MembershipCollectionResource` |
-| طلب التسجيل | `registration_requests`, `registration_request_profiles` | `CreateRegistrationInput`, `RegistrationRequest`, `RegistrationResponse` | `POST /registration-requests`, صندوق الطلبات، القبول والرفض | `SubmitRegistrationService`, `AcceptRegistrationService` |
-| Snapshot التسجيل | `registration_request_profiles`, `registration_request_availability`, `registration_request_availability_slots` | `StudentApplicationProfile`, `AttendancePreferences` | ضمن إنشاء الطلب ولا يعرض كاملًا قبل القبول | `StoreRegistrationSnapshotService`, `ApplicantPublicSummaryResource` |
+| طلب التسجيل | `registration_requests`, `registration_request_profiles` | `CreateRegistrationInput`, `RegistrationRequest`, `RegistrationResponse` | `POST /registration-requests`, `POST/GET /halaqas/{halaqaId}/registration-requests`, `GET /student-applications`، القبول والرفض | `RegistrationService`, `RegistrationQueryService`, `ApplicantPublicSummaryResource` |
+| Snapshot التسجيل | `registration_request_profiles`، مع `student_availability_profiles` و`student_availability_slots` للحساب الحالي | `StudentApplicationProfile`, `PreviousMemorization`, `AttendancePreferences` | ضمن إنشاء الطلب ولا يعرض كاملًا قبل القبول | `RegistrationService`, `ApplicantPublicSummaryResource` |
 
 ## الخطة والجدولة
 

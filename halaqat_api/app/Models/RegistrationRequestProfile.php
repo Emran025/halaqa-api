@@ -17,7 +17,7 @@ class RegistrationRequestProfile extends Model
         'registration_request_id', 'gender', 'birth_date', 'country', 'city', 'residence',
         'phone', 'phone_zone', 'whatsapp_phone', 'whatsapp_zone', 'memorization_level',
         'review_level', 'memorized_juz_count', 'memorized_surah_ids', 'last_completed_unit',
-        'previous_memorization_notes', 'profile_bio',
+        'previous_memorization_notes', 'stop_reasons', 'profile_bio',
     ];
 
     protected function casts(): array

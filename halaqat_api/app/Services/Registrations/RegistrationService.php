@@ -51,8 +51,13 @@ class RegistrationService
                 'country' => $profile['country'], 'city' => $profile['city'], 'residence' => $profile['residence'] ?? null,
                 'phone' => $profile['phone'], 'phone_zone' => $profile['phone_zone'], 'whatsapp_phone' => $profile['whatsapp_phone'] ?? null,
                 'whatsapp_zone' => $profile['whatsapp_zone'] ?? null, 'memorization_level' => $profile['memorization_level'] ?? null,
-                'review_level' => $profile['review_level'] ?? null, 'memorized_juz_count' => $previous['memorized_juz_count'] ?? null,
-                'previous_memorization_notes' => $previous['previous_teacher_notes'] ?? null, 'profile_bio' => $profile['bio'] ?? null,
+                'review_level' => $profile['review_level'] ?? null,
+                'memorized_juz_count' => $previous['memorized_juz_count'] ?? null,
+                'memorized_surah_ids' => $previous['memorized_surah_ids'] ?? null,
+                'last_completed_unit' => $previous['last_completed_unit'] ?? null,
+                'previous_memorization_notes' => $previous['previous_teacher_notes'] ?? null,
+                'stop_reasons' => $previous['stop_reasons'] ?? null,
+                'profile_bio' => $profile['bio'] ?? null,
             ]);
 
             return $request->load(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile']);

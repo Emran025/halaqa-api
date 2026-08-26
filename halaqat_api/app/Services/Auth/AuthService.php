@@ -267,6 +267,7 @@ class AuthService
             'memorized_surah_ids' => $previous['memorized_surah_ids'] ?? null,
             'last_completed_unit' => $previous['last_completed_unit'] ?? null,
             'previous_memorization_notes' => $previous['previous_teacher_notes'] ?? null,
+            'stop_reasons' => $previous['stop_reasons'] ?? null,
             'profile_bio' => $data['profile_bio'] ?? null,
         ]);
 
