@@ -27,7 +27,9 @@ class FollowUpPlanResource extends JsonResource
                 'created_at' => $detail->created_at?->toISOString(),
                 'updated_at' => $detail->updated_at?->toISOString(),
             ])->values()->all(),
-            'attendance_preferences' => AttendancePreferencesResource::make($this->student->studentProfile->availability),
+            'attendance_preferences' => $this->student?->studentProfile?->availability
+                ? AttendancePreferencesResource::make($this->student->studentProfile->availability)
+                : null,
             'starts_on' => $this->starts_on?->format('Y-m-d'),
             'ends_on' => $this->ends_on?->format('Y-m-d'),
             'version' => (int) $this->version,

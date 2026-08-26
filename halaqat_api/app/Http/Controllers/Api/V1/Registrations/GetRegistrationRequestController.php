@@ -12,7 +12,7 @@ class GetRegistrationRequestController extends Controller
     public function __invoke(RegistrationRequest $registrationRequest): RegistrationResponseResource
     {
         Gate::authorize('view', $registrationRequest);
-        $registrationRequest->load(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
+        $registrationRequest->load(['student.studentProfile.availability', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots', 'followUpPlan.details', 'followUpPlan.student.studentProfile.availability']);
 
         return new RegistrationResponseResource($registrationRequest);
     }

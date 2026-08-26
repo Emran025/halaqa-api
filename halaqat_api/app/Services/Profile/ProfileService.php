@@ -103,7 +103,10 @@ class ProfileService
                 'qualification', 'experience_years', 'available_time', 'bio', 'max_halaqas',
             ])));
 
-            return $teacher->fresh(['teacherProfile.documents', 'halaqas']);
+            return $teacher->fresh([
+                'teacherProfile.documents',
+                'halaqas' => fn ($query) => $query->where('status', 'active')->withCount('activeMemberships'),
+            ])->loadCount(['halaqas as active_halaqas_count' => fn ($query) => $query->where('status', 'active')]);
         });
     }
 }

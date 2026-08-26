@@ -2,11 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\FollowUpItem;
+use App\Models\FollowUpPlan;
+use App\Models\FollowUpPlanDetail;
 use App\Models\Halaqa;
 use App\Models\HalaqaMembership;
 use Database\Seeders\MistakeTypeSeeder;
 use Database\Seeders\QuranReferenceSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -104,6 +108,34 @@ class LiveSessionTest extends TestCase
         $this->withToken($teacher['token'])->deleteJson($base.'/mistakes/'.$mistakeId)->assertNoContent();
         $this->assertSoftDeleted('mistakes', ['id' => $mistakeId]);
         $this->withToken($teacher['token'])->getJson($base.'/mistakes')->assertOk()->assertJsonPath('meta.total', 0);
+    }
+
+    public function test_session_follow_up_item_must_belong_to_same_student_and_active_plan(): void
+    {
+        $teacher = $this->registerTeacher();
+        app('auth')->forgetGuards();
+        $student = $this->registerStudent();
+        app('auth')->forgetGuards();
+        $otherStudent = $this->registerStudent();
+        $halaqa = Halaqa::create(['id' => (string) Str::uuid(), 'teacher_id' => $teacher['user']['id'], 'name' => 'Follow-up Halaqa', 'gender' => 'male', 'country' => 'Saudi Arabia', 'residence' => 'Riyadh', 'timezone' => 'Asia/Riyadh', 'max_students' => 5, 'status' => 'active']);
+        HalaqaMembership::insert([
+            ['id' => (string) Str::uuid(), 'halaqa_id' => $halaqa->id, 'student_id' => $student['user']['id'], 'status' => 'active', 'joined_at' => now()],
+            ['id' => (string) Str::uuid(), 'halaqa_id' => $halaqa->id, 'student_id' => $otherStudent['user']['id'], 'status' => 'active', 'joined_at' => now()],
+        ]);
+        $plan = FollowUpPlan::create(['id' => (string) Str::uuid(), 'student_id' => $student['user']['id'], 'created_by_user_id' => $student['user']['id'], 'frequency' => 'daily', 'status' => 'active', 'timezone' => 'UTC', 'starts_on' => Carbon::today()->toDateString(), 'version' => 1]);
+        $detail = FollowUpPlanDetail::create(['id' => (string) Str::uuid(), 'plan_id' => $plan->id, 'tracking_type_id' => 1, 'tracking_unit_id' => 1, 'amount' => 1, 'sort_order' => 1]);
+        $item = FollowUpItem::create(['id' => (string) Str::uuid(), 'plan_id' => $plan->id, 'plan_detail_id' => $detail->id, 'student_id' => $student['user']['id'], 'scheduled_for' => now(), 'timezone' => 'UTC', 'state' => 'upcoming']);
+
+        app('auth')->forgetGuards();
+        $valid = $this->withToken($teacher['token'])->postJson('/api/v1/sessions', ['halaqa_id' => $halaqa->id, 'student_id' => $student['user']['id'], 'task_type' => 'memorization', 'follow_up_item_id' => $item->id, 'client_operation_id' => (string) Str::uuid()]);
+        $valid->assertCreated()->assertJsonPath('session.follow_up_item_id', $item->id);
+
+        app('auth')->forgetGuards();
+        $this->withToken($teacher['token'])->postJson('/api/v1/sessions', ['halaqa_id' => $halaqa->id, 'student_id' => $otherStudent['user']['id'], 'task_type' => 'memorization', 'follow_up_item_id' => $item->id, 'client_operation_id' => (string) Str::uuid()])
+            ->assertStatus(409)->assertJsonPath('error.code', 'follow_up_item_invalid');
+        app('auth')->forgetGuards();
+        $this->withToken($teacher['token'])->postJson('/api/v1/sessions', ['halaqa_id' => $halaqa->id, 'student_id' => $otherStudent['user']['id'], 'task_type' => 'memorization', 'follow_up_item_id' => (string) Str::uuid(), 'client_operation_id' => (string) Str::uuid()])
+            ->assertStatus(409)->assertJsonPath('error.code', 'follow_up_item_invalid');
     }
 
     public function test_second_active_session_is_rejected(): void

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Halaqa;
 use App\Models\StudentProfile;
 use App\Models\TeacherDocument;
 use App\Models\TeacherProfile;
@@ -9,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ProfileManagementTest extends TestCase
@@ -124,6 +126,21 @@ class ProfileManagementTest extends TestCase
 
         $this->withToken($token)->deleteJson('/api/v1/me/teacher-documents/'.$documentId)->assertNoContent();
         $this->assertSoftDeleted('teacher_documents', ['id' => $documentId]);
+    }
+
+    public function test_teacher_profile_exposes_only_active_halaqas(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        TeacherProfile::create(['user_id' => $teacher->id, 'teacher_code' => 'TCH-ACTIVE-'.$teacher->id, 'qualification' => 'Ijazah']);
+        $active = Halaqa::create(['id' => (string) Str::uuid(), 'teacher_id' => $teacher->id, 'name' => 'Active Halaqa', 'gender' => 'male', 'country' => 'Saudi Arabia', 'residence' => 'Riyadh', 'status' => 'active', 'timezone' => 'Asia/Riyadh']);
+        Halaqa::create(['id' => (string) Str::uuid(), 'teacher_id' => $teacher->id, 'name' => 'Inactive Halaqa', 'gender' => 'male', 'country' => 'Saudi Arabia', 'residence' => 'Riyadh', 'status' => 'inactive', 'timezone' => 'Asia/Riyadh']);
+        $token = $teacher->createToken('test')->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/v1/me/teacher-profile')
+            ->assertOk()
+            ->assertJsonCount(1, 'teacher_profile.public_halaqas')
+            ->assertJsonPath('teacher_profile.public_halaqas.0.id', (string) $active->id)
+            ->assertJsonMissingPath('teacher_profile.public_halaqas.1');
     }
 
     public function test_teacher_document_delete_rejects_other_teachers(): void

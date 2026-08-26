@@ -11,8 +11,7 @@ class TeacherPublicResource extends JsonResource
     public function toArray(Request $request): array
     {
         $profile = $this->teacherProfile;
-        $activeHalaqaCount = $this->active_halaqas_count
-            ?? $this->halaqas()->where('status', 'active')->count();
+        $activeHalaqaCount = (int) ($this->active_halaqas_count ?? 0);
         $maximum = (int) ($profile?->max_halaqas ?? 0);
 
         return [

@@ -26,8 +26,17 @@ class FollowUpAutomationService
         $created = 0;
         FollowUpPlan::query()
             ->where('status', 'active')
-            ->with(['details', 'student'])
+            ->with('details')
             ->chunkById(100, function ($plans) use ($now, &$created): void {
+                $halaqaByStudent = HalaqaMembership::query()
+                    ->whereIn('student_id', $plans->pluck('student_id')->unique()->all())
+                    ->where('status', 'active')
+                    ->orderBy('joined_at')
+                    ->orderBy('id')
+                    ->get(['student_id', 'halaqa_id'])
+                    ->unique('student_id')
+                    ->pluck('halaqa_id', 'student_id');
+
                 foreach ($plans as $plan) {
                     $timezone = $plan->timezone ?: 'UTC';
                     $localNow = $now->copy()->setTimezone($timezone);
@@ -64,7 +73,7 @@ class FollowUpAutomationService
                             'plan_id' => $plan->id,
                             'plan_detail_id' => $detail->id,
                             'student_id' => $plan->student_id,
-                            'halaqa_id' => HalaqaMembership::query()->where('student_id', $plan->student_id)->where('status', 'active')->value('halaqa_id'),
+                            'halaqa_id' => $halaqaByStudent->get($plan->student_id),
                             'scheduled_for' => $scheduled->copy()->setTimezone('UTC'),
                             'timezone' => $timezone,
                             'state' => 'upcoming',

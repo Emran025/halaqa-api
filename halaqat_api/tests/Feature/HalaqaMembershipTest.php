@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -134,6 +135,19 @@ class HalaqaMembershipTest extends TestCase
         $this->withToken($student['token'])->postJson('/api/v1/halaqas', $this->halaqaPayload())->assertForbidden();
         app('auth')->forgetGuards();
         $this->withToken($student['token'])->getJson('/api/v1/halaqas')->assertOk()->assertJsonCount(1, 'halaqas');
+    }
+
+    public function test_student_country_must_match_halaqa_country(): void
+    {
+        $teacher = $this->registerTeacher();
+        $student = $this->registerStudent();
+        $halaqaId = $this->createHalaqa($teacher['token'])['halaqa']['id'];
+        User::query()->whereKey($student['user']['id'])->update(['country' => 'Egypt']);
+
+        $this->withToken($teacher['token'])->postJson('/api/v1/halaqas/'.$halaqaId.'/students', ['student_id' => $student['user']['id']])
+            ->assertStatus(409)
+            ->assertJsonPath('error.code', 'halaqa_country_mismatch');
+        $this->assertDatabaseMissing('halaqa_memberships', ['student_id' => $student['user']['id'], 'status' => 'active']);
     }
 
     public function test_unknown_halaqa_fields_are_rejected(): void

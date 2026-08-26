@@ -12,7 +12,7 @@ class RegistrationQueryService
     public function halaqaInbox(Halaqa $halaqa, array $filters): LengthAwarePaginator
     {
         $query = RegistrationRequest::query()
-            ->with(['student', 'student.studentProfile', 'teacher.teacherProfile', 'requestedHalaqa', 'profile', 'availability.slots'])
+            ->with(['student', 'student.studentProfile', 'teacher.teacherProfile', 'requestedHalaqa', 'profile', 'availability.slots', 'followUpPlan.details', 'followUpPlan.student.studentProfile.availability'])
             ->where('requested_halaqa_id', $halaqa->id)
             ->when(isset($filters['state']), fn ($query) => $query->where('state', $filters['state']))
             ->latest('submitted_at');
@@ -24,14 +24,14 @@ class RegistrationQueryService
     {
         $state = $filters['state'] ?? 'pending';
         $query = RegistrationRequest::query()
-            ->with(['student', 'student.studentProfile', 'teacher.teacherProfile', 'requestedHalaqa', 'profile', 'availability.slots'])
+            ->with(['student', 'student.studentProfile', 'teacher.teacherProfile', 'requestedHalaqa', 'profile', 'availability.slots', 'followUpPlan.details', 'followUpPlan.student.studentProfile.availability'])
             ->where('state', $state)
-            ->where(function ($query) use ($teacher): void {
+            ->where(function ($query) use ($teacher, $state): void {
                 $query->where('teacher_id', $teacher->id)
-                    ->orWhere(function ($nested) use ($teacher): void {
+                    ->orWhere(function ($nested) use ($teacher, $state): void {
                         $nested->where('routing_mode', 'all_available_teachers')
-                            ->where('state', 'pending')
-                            ->whereHas('student', fn ($student) => $student
+                            ->where('state', $state)
+                            ->whereHas('profile', fn ($profile) => $profile
                                 ->where('gender', $teacher->gender)
                                 ->where('country', $teacher->country));
                     });

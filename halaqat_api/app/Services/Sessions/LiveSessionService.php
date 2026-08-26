@@ -6,6 +6,7 @@ use App\Events\LiveSession\LiveSessionRealtimeEvent;
 use App\Events\Notifications\SessionScheduled;
 use App\Exceptions\ApiConflictException;
 use App\Models\DailyTracking;
+use App\Models\FollowUpItem;
 use App\Models\HalaqaMembership;
 use App\Models\LiveSession;
 use App\Models\SessionTask;
@@ -55,6 +56,27 @@ class LiveSessionService
         });
     }
 
+    private function assertFollowUpItem(array $data): void
+    {
+        if (($data['follow_up_item_id'] ?? null) === null) {
+            return;
+        }
+
+        $valid = FollowUpItem::query()
+            ->whereKey($data['follow_up_item_id'])
+            ->where('student_id', $data['student_id'])
+            ->where(function ($query) use ($data): void {
+                $query->whereNull('halaqa_id')->orWhere('halaqa_id', $data['halaqa_id']);
+            })
+            ->whereIn('state', ['upcoming', 'due', 'in_progress', 'overdue'])
+            ->whereHas('plan', fn ($query) => $query->where('status', 'active'))
+            ->exists();
+
+        if (! $valid) {
+            throw new ApiConflictException('The follow-up item is not valid for this student and halaqa.', 'follow_up_item_invalid', 'follow_up_item_id', (string) $data['follow_up_item_id']);
+        }
+    }
+
     public function create(User $teacher, array $data): LiveSession
     {
         return DB::transaction(function () use ($teacher, $data): LiveSession {
@@ -71,6 +93,7 @@ class LiveSessionService
             if ($membership === null) {
                 throw new ApiConflictException('The student is not an active member of this teacher\'s halaqa.', 'student_not_in_halaqa', 'student', $data['student_id']);
             }
+            $this->assertFollowUpItem($data);
             $activeStates = ['requested', 'accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected'];
             if (LiveSession::query()->where('student_id', $data['student_id'])->whereIn('state', $activeStates)->lockForUpdate()->exists()) {
                 throw new ApiConflictException('The student already has an active live session.', 'active_session_exists', 'student', $data['student_id']);

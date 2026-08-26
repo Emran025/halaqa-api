@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\FollowUpPlan;
 use App\Models\RegistrationRequest;
+use App\Models\User;
+use App\Services\Progress\FollowUpAutomationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -32,6 +35,47 @@ class RegistrationRequestTest extends TestCase
         app('auth')->forgetGuards();
         $this->withToken($student['token'])->getJson('/api/v1/registration-requests/'.$registrationId)
             ->assertOk()->assertJsonPath('registration_request.visibility', 'student_visible')->assertJsonPath('registration_request.profile.gender', 'male');
+    }
+
+    public function test_submitted_follow_up_plan_is_bound_and_activated_after_acceptance(): void
+    {
+        $teacher = $this->registerTeacher();
+        app('auth')->forgetGuards();
+        $student = $this->registerStudent('plan.registration@example.test', '500000013');
+        $initialRequestId = $this->registrationIdFor($student['user']['id']);
+        $this->withToken($student['token'])->deleteJson('/api/v1/registration-requests/'.$initialRequestId)->assertNoContent();
+
+        app('auth')->forgetGuards();
+        $payload = $this->registrationPayload();
+        $payload['follow_up_plan'] = ['frequency' => 'onceAWeek', 'details' => [['task_type' => 'review', 'unit' => 'page', 'amount' => 2, 'notes' => 'Weekly review']]];
+        $submitted = $this->withToken($student['token'])->postJson('/api/v1/registration-requests', $payload)->assertCreated();
+        $registrationId = $submitted->json('registration_request.id');
+        $plan = FollowUpPlan::query()->where('source_registration_request_id', $registrationId)->firstOrFail();
+        $this->assertSame('draft', $plan->status);
+        $this->assertSame('onceAWeek', $plan->frequency);
+        $this->assertDatabaseHas('follow_up_plan_details', ['plan_id' => $plan->id, 'amount' => 2]);
+
+        app('auth')->forgetGuards();
+        $this->withToken($teacher['token'])->postJson('/api/v1/registration-requests/'.$registrationId.'/accept')
+            ->assertOk()->assertJsonPath('registration_request.follow_up_plan.status', 'active')
+            ->assertJsonPath('registration_request.follow_up_plan.frequency', 'onceAWeek');
+        $this->assertDatabaseHas('follow_up_plans', ['id' => $plan->id, 'status' => 'active', 'approved_by_user_id' => $teacher['user']['id']]);
+        $this->assertSame(1, app(FollowUpAutomationService::class)->process(now()));
+        $this->assertDatabaseHas('follow_up_items', ['plan_id' => $plan->id, 'student_id' => $student['user']['id']]);
+    }
+
+    public function test_general_request_visibility_uses_snapshot_and_includes_completion_requested(): void
+    {
+        $teacher = $this->registerTeacher();
+        $student = $this->registerStudent('snapshot.registration@example.test', '500000012');
+        $registrationId = $this->registrationIdFor($student['user']['id']);
+        RegistrationRequest::query()->whereKey($registrationId)->update(['state' => 'completion_requested']);
+        User::query()->whereKey($student['user']['id'])->update(['gender' => 'female', 'country' => 'Egypt']);
+
+        app('auth')->forgetGuards();
+        $this->withToken($teacher['token'])->getJson('/api/v1/registration-requests/'.$registrationId)
+            ->assertOk()
+            ->assertJsonPath('registration_request.visibility', 'public_summary');
     }
 
     public function test_student_can_cancel_open_request_and_teacher_can_reject_with_note(): void

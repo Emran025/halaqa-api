@@ -24,6 +24,9 @@ class MembershipService
             if ($halaqa->gender !== $student->gender) {
                 throw new ApiConflictException('The student gender does not match the halaqa.', 'halaqa_gender_mismatch', 'halaqa', $halaqa->id);
             }
+            if ($halaqa->country !== $student->country) {
+                throw new ApiConflictException('The student country does not match the halaqa.', 'halaqa_country_mismatch', 'halaqa', $halaqa->id);
+            }
             if ($halaqa->max_students !== null && $halaqa->activeMemberships()->count() >= $halaqa->max_students) {
                 throw new ApiConflictException('The halaqa has reached its student capacity.', 'halaqa_capacity_reached', 'halaqa', $halaqa->id);
             }

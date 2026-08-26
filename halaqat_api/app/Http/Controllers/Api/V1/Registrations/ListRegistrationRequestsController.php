@@ -12,7 +12,7 @@ class ListRegistrationRequestsController extends Controller
     public function __invoke(Request $request): RegistrationCollectionResource
     {
         $user = $request->user();
-        $query = RegistrationRequest::query()->with(['student', 'student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
+        $query = RegistrationRequest::query()->with(['student', 'student.studentProfile.availability', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots', 'followUpPlan.details', 'followUpPlan.student.studentProfile.availability']);
 
         if ($user->isStudent()) {
             $query->where('student_id', $user->id);
@@ -20,8 +20,8 @@ class ListRegistrationRequestsController extends Controller
             $query->where(function ($q) use ($user): void {
                 $q->where('teacher_id', $user->id)
                     ->orWhere(function ($nested) use ($user): void {
-                        $nested->where('routing_mode', 'all_available_teachers')->where('state', 'pending')
-                            ->whereHas('student', fn ($student) => $student->where('gender', $user->gender)->where('country', $user->country));
+                        $nested->where('routing_mode', 'all_available_teachers')->whereIn('state', ['pending', 'completion_requested'])
+                            ->whereHas('profile', fn ($profile) => $profile->where('gender', $user->gender)->where('country', $user->country));
                     })
                     ->orWhereHas('requestedHalaqa', fn ($halaqa) => $halaqa->where('teacher_id', $user->id));
             });

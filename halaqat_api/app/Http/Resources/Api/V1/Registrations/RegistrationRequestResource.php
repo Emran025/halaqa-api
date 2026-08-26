@@ -18,6 +18,13 @@ class RegistrationRequestResource extends JsonResource
         $isAcceptedTeacher = $viewer?->isTeacher() && $this->state === 'accepted' && $this->teacher_id === $viewer->id;
         $fullDetailsVisible = $isStudent || $isAcceptedTeacher;
         $profile = $this->profile;
+        $followUpPlan = null;
+        if ($fullDetailsVisible && $this->followUpPlan) {
+            $followUpPlan = (new FollowUpPlanResource($this->followUpPlan))->resolve($request);
+            $followUpPlan['attendance_preferences'] = $this->availability
+                ? (new AttendancePreferencesResource($this->availability))->resolve($request)
+                : null;
+        }
 
         return [
             'id' => (string) $this->id,
@@ -43,9 +50,7 @@ class RegistrationRequestResource extends JsonResource
             'attendance_preferences' => $fullDetailsVisible && $this->availability
                 ? new AttendancePreferencesResource($this->availability)
                 : null,
-            'follow_up_plan' => $fullDetailsVisible && $this->student?->studentProfile?->followUpPlan
-                ? new FollowUpPlanResource($this->student->studentProfile->followUpPlan)
-                : null,
+            'follow_up_plan' => $followUpPlan,
             'state' => $this->state,
             'visibility' => $isStudent ? 'student_visible' : ($isAcceptedTeacher ? 'relationship_visible' : 'public_summary'),
             'message' => $this->public_message,

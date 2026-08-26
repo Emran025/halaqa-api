@@ -3,6 +3,8 @@
 namespace App\Services\Registrations;
 
 use App\Exceptions\ApiConflictException;
+use App\Models\FollowUpPlan;
+use App\Models\FollowUpPlanDetail;
 use App\Models\Halaqa;
 use App\Models\HalaqaMembership;
 use App\Models\Notification;
@@ -11,6 +13,8 @@ use App\Models\RegistrationRequestAvailability;
 use App\Models\RegistrationRequestAvailabilitySlot;
 use App\Models\RegistrationRequestProfile;
 use App\Models\TeacherProfile;
+use App\Models\TrackingType;
+use App\Models\TrackingUnit;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -22,7 +26,7 @@ class RegistrationService
         return DB::transaction(function () use ($student, $data): RegistrationRequest {
             $existing = RegistrationRequest::query()->where('student_id', $student->id)->where('client_operation_id', $data['client_operation_id'])->first();
             if ($existing !== null) {
-                return $existing->load(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
+                return $existing->load(['student.studentProfile.availability', 'followUpPlan.details', 'followUpPlan.student.studentProfile.availability', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
             }
 
             $open = RegistrationRequest::query()->where('student_id', $student->id)->whereIn('state', ['pending', 'completion_requested'])->exists();
@@ -37,7 +41,8 @@ class RegistrationService
             if ($halaqa && $teacher && $halaqa->teacher_id !== $teacher->id) {
                 throw new ApiConflictException('The requested halaqa does not belong to the selected teacher.', 'routing_target_mismatch', 'halaqa', $halaqa->id);
             }
-            if ($halaqa && ($halaqa->gender !== $student->gender || $halaqa->country !== $student->country || $halaqa->status !== 'active')) {
+            $profile = $data['profile'];
+            if ($halaqa && ($halaqa->gender !== $profile['gender'] || $halaqa->country !== $profile['country'] || $halaqa->status !== 'active')) {
                 throw new ApiConflictException('The requested halaqa is not available for this student.', 'halaqa_not_available', 'halaqa', $halaqa->id);
             }
 
@@ -47,7 +52,6 @@ class RegistrationService
                 'routing_mode' => $teacher ? 'specific_teacher' : 'all_available_teachers', 'state' => 'pending',
                 'public_message' => $data['message'] ?? null, 'submitted_at' => now(),
             ]);
-            $profile = $data['profile'];
             $previous = $data['previous_memorization'] ?? [];
             RegistrationRequestProfile::create([
                 'registration_request_id' => $request->id, 'gender' => $profile['gender'], 'birth_date' => $profile['birth_date'],
@@ -78,10 +82,11 @@ class RegistrationService
                     'is_preferred' => $slot['preferred'] ?? false,
                 ]);
             }
+            $this->createFollowUpPlan($student, $data['follow_up_plan'], $attendance['timezone'], $request->id);
 
-            $this->notifySubmitted($request->fresh(['student', 'teacher']));
+            $this->notifySubmitted($request->fresh(['student', 'teacher', 'profile']));
 
-            return $request->load(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
+            return $request->load(['student.studentProfile.availability', 'followUpPlan.details', 'followUpPlan.student.studentProfile.availability', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
         });
     }
 
@@ -101,6 +106,15 @@ class RegistrationService
             }
 
             $request->forceFill(['teacher_id' => $teacher->id, 'state' => 'accepted', 'decided_by_teacher_id' => $teacher->id, 'decided_at' => now(), 'accepted_at' => now()])->save();
+            $plan = FollowUpPlan::query()->where('source_registration_request_id', $request->id)->lockForUpdate()->first();
+            if ($plan !== null) {
+                FollowUpPlan::query()
+                    ->where('student_id', $request->student_id)
+                    ->where('status', 'active')
+                    ->where('id', '!=', $plan->id)
+                    ->update(['status' => 'archived']);
+                $plan->forceFill(['status' => 'active', 'approved_by_user_id' => $teacher->id, 'approved_at' => now()])->save();
+            }
             if ($halaqa && ! HalaqaMembership::query()->where('student_id', $request->student_id)->where('status', 'active')->exists()) {
                 if ($halaqa->max_students !== null && $halaqa->activeMemberships()->count() >= $halaqa->max_students) {
                     throw new ApiConflictException('The halaqa has reached its student capacity.', 'halaqa_capacity_reached', 'halaqa', $halaqa->id);
@@ -110,7 +124,7 @@ class RegistrationService
 
             $this->notifyStudent($request, 'accepted', 'Your registration request was accepted.');
 
-            return $request->fresh(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
+            return $request->fresh(['student.studentProfile.availability', 'followUpPlan.details', 'followUpPlan.student.studentProfile.availability', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
         });
     }
 
@@ -137,13 +151,49 @@ class RegistrationService
         });
     }
 
+    private function createFollowUpPlan(User $student, array $input, string $timezone, string $sourceRegistrationRequestId): void
+    {
+        $typeIds = TrackingType::query()->pluck('id', 'code');
+        $unitIds = TrackingUnit::query()->pluck('id', 'code');
+        foreach ($input['details'] as $detail) {
+            if (! isset($typeIds[$detail['task_type']], $unitIds[$detail['unit']])) {
+                throw new ApiConflictException('The follow-up plan contains an inactive tracking type or unit.', 'invalid_tracking_reference', 'follow_up_plan', $sourceRegistrationRequestId);
+            }
+        }
+
+        $plan = FollowUpPlan::create([
+            'id' => (string) Str::uuid(),
+            'student_id' => $student->id,
+            'created_by_user_id' => $student->id,
+            'source_registration_request_id' => $sourceRegistrationRequestId,
+            'frequency' => $input['frequency'],
+            'status' => 'draft',
+            'timezone' => $timezone,
+            'starts_on' => $input['starts_on'] ?? null,
+            'ends_on' => $input['ends_on'] ?? null,
+            'version' => 1,
+        ]);
+        foreach ($input['details'] as $index => $detail) {
+            FollowUpPlanDetail::create([
+                'id' => (string) Str::uuid(),
+                'plan_id' => $plan->id,
+                'tracking_type_id' => $typeIds[$detail['task_type']],
+                'tracking_unit_id' => $unitIds[$detail['unit']],
+                'amount' => $detail['amount'],
+                'notes' => $detail['notes'] ?? null,
+                'sort_order' => $index + 1,
+            ]);
+        }
+    }
+
     private function notifySubmitted(RegistrationRequest $request): void
     {
+        $request->loadMissing('profile');
         $teacherIds = $request->teacher_id !== null
             ? collect([$request->teacher_id])
             : User::query()->where('role', 'teacher')->where('status', 'active')
-                ->where('gender', $request->student->gender)
-                ->where('country', $request->student->country)
+                ->where('gender', $request->profile?->gender)
+                ->where('country', $request->profile?->country)
                 ->pluck('id');
 
         foreach ($teacherIds as $teacherId) {
@@ -185,7 +235,7 @@ class RegistrationService
             $message = $state === 'rejected' ? 'Your registration request was rejected.' : 'Your registration request needs additional information.';
             $this->notifyStudent($request, $state, $message);
 
-            return $request->fresh(['student.studentProfile.availability', 'student.studentProfile.followUpPlan.details', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
+            return $request->fresh(['student.studentProfile.availability', 'followUpPlan.details', 'followUpPlan.student.studentProfile.availability', 'teacher.teacherProfile', 'requestedHalaqa.teacher.teacherProfile', 'profile', 'availability.slots']);
         });
     }
 }

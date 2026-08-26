@@ -15,10 +15,12 @@ class CurrentTeacherProfileController extends Controller
         $teacher = $request->user();
         abort_unless($teacher?->isTeacher(), 403);
 
-        return new TeacherProfileResponseResource($teacher->load([
+        $teacher->load([
             'teacherProfile.documents',
-            'halaqas' => fn ($query) => $query->withCount('activeMemberships'),
-        ]));
+            'halaqas' => fn ($query) => $query->where('status', 'active')->withCount('activeMemberships'),
+        ])->loadCount(['halaqas as active_halaqas_count' => fn ($query) => $query->where('status', 'active')]);
+
+        return new TeacherProfileResponseResource($teacher);
     }
 
     public function update(UpdateTeacherProfileRequest $request, ProfileService $service): TeacherProfileResponseResource
