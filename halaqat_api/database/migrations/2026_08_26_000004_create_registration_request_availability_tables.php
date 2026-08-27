@@ -17,7 +17,7 @@ return new class extends Migration
             });
         }
 
-        if (! Schema::hasIndex('registration_request_availability', 'fk_reg_req_avail_request', 'foreign')) {
+        if (! $this->hasForeignKey('registration_request_availability', 'fk_reg_req_avail_request')) {
             Schema::table('registration_request_availability', function (Blueprint $table): void {
                 $table->foreign(
                     'registration_request_id',
@@ -56,7 +56,7 @@ return new class extends Migration
             });
         }
 
-        if (! Schema::hasIndex('registration_request_availability_slots', 'fk_reg_req_avail_slot_request', 'foreign')) {
+        if (! $this->hasForeignKey('registration_request_availability_slots', 'fk_reg_req_avail_slot_request')) {
             Schema::table('registration_request_availability_slots', function (Blueprint $table): void {
                 $table->foreign(
                     'registration_request_id',
@@ -64,6 +64,17 @@ return new class extends Migration
                 )->references('id')->on('registration_requests')->cascadeOnDelete();
             });
         }
+    }
+
+    private function hasForeignKey(string $table, string $name): bool
+    {
+        foreach (Schema::getForeignKeys($table) as $foreignKey) {
+            if ($foreignKey['name'] === $name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function down(): void
