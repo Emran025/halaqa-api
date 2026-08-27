@@ -3,7 +3,7 @@ name: Quran Halaqa Laravel Deploy
 on:
   push:
     branches:
-      - feature/session-mushaf-state
+      - main
   workflow_dispatch:
 
 permissions:
