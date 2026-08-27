@@ -4,6 +4,8 @@ namespace App\Http\Resources\Api\V1\Registrations;
 
 use App\Http\Resources\Api\V1\Halaqas\HalaqaPublicSummaryResource;
 use App\Http\Resources\Api\V1\Halaqas\TeacherPublicSummaryResource;
+use App\Http\Resources\Api\V1\Progress\AttendancePreferencesResource;
+use App\Http\Resources\Api\V1\Progress\FollowUpPlanResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,6 +18,13 @@ class RegistrationRequestResource extends JsonResource
         $isAcceptedTeacher = $viewer?->isTeacher() && $this->state === 'accepted' && $this->teacher_id === $viewer->id;
         $fullDetailsVisible = $isStudent || $isAcceptedTeacher;
         $profile = $this->profile;
+        $followUpPlan = null;
+        if ($fullDetailsVisible && $this->followUpPlan) {
+            $followUpPlan = (new FollowUpPlanResource($this->followUpPlan))->resolve($request);
+            $followUpPlan['attendance_preferences'] = $this->availability
+                ? (new AttendancePreferencesResource($this->availability))->resolve($request)
+                : null;
+        }
 
         return [
             'id' => (string) $this->id,
@@ -32,11 +41,16 @@ class RegistrationRequestResource extends JsonResource
             ] : null,
             'previous_memorization' => $fullDetailsVisible && $profile ? [
                 'memorization_level' => $profile->memorization_level, 'review_level' => $profile->review_level,
-                'memorized_juz_count' => $profile->memorized_juz_count, 'previous_teacher_notes' => $profile->previous_memorization_notes,
-                'stop_reasons' => null, 'memorized_surah_ids' => [],
+                'memorized_juz_count' => $profile->memorized_juz_count,
+                'previous_teacher_notes' => $profile->previous_memorization_notes,
+                'stop_reasons' => $profile->stop_reasons,
+                'memorized_surah_ids' => $profile->memorized_surah_ids ?? [],
+                'last_completed_unit' => $profile->last_completed_unit,
             ] : null,
-            'attendance_preferences' => $fullDetailsVisible ? $this->student?->studentProfile?->availability : null,
-            'follow_up_plan' => $fullDetailsVisible ? $this->student?->studentProfile?->followUpPlan : null,
+            'attendance_preferences' => $fullDetailsVisible && $this->availability
+                ? new AttendancePreferencesResource($this->availability)
+                : null,
+            'follow_up_plan' => $followUpPlan,
             'state' => $this->state,
             'visibility' => $isStudent ? 'student_visible' : ($isAcceptedTeacher ? 'relationship_visible' : 'public_summary'),
             'message' => $this->public_message,

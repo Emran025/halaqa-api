@@ -37,6 +37,31 @@ class LiveSessionPolicy
         return $session->teacher_id === $user->id && ! in_array($session->state, ['ended', 'cancelled', 'rejected'], true);
     }
 
+    public function viewMushafState(User $user, LiveSession $session): bool
+    {
+        return $this->isParticipant($user, $session);
+    }
+
+    public function updateMushafState(User $user, LiveSession $session): bool
+    {
+        return $this->isParticipant($user, $session) && ! in_array($session->state, ['cancelled', 'rejected'], true);
+    }
+
+    public function realtime(User $user, LiveSession $session): bool
+    {
+        return $this->isParticipant($user, $session) && ! in_array($session->state, ['requested', 'cancelled', 'rejected', 'ended'], true);
+    }
+
+    public function reconnect(User $user, LiveSession $session): bool
+    {
+        return $this->isParticipant($user, $session) && ! in_array($session->state, ['requested', 'cancelled', 'rejected', 'ended'], true);
+    }
+
+    public function markDirectConnectionUnavailable(User $user, LiveSession $session): bool
+    {
+        return $this->isParticipant($user, $session) && in_array($session->state, ['accepted', 'connecting', 'direct_negotiation', 'connected', 'weak_connection', 'reconnecting', 'disconnected', 'direct_connection_unavailable'], true);
+    }
+
     private function isParticipant(User $user, LiveSession $session): bool
     {
         return $session->teacher_id === $user->id || $session->student_id === $user->id;

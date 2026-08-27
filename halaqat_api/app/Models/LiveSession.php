@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class LiveSession extends Model
 {
@@ -12,7 +13,7 @@ class LiveSession extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'halaqa_id', 'teacher_id', 'student_id', 'follow_up_item_id', 'task_type_id', 'state', 'scheduled_at', 'requested_at', 'accepted_at', 'connected_at', 'ended_at', 'end_reason', 'direct_p2p_only', 'client_operation_id'];
+    protected $fillable = ['id', 'halaqa_id', 'teacher_id', 'student_id', 'follow_up_item_id', 'task_type_id', 'state', 'scheduled_at', 'requested_at', 'accepted_at', 'connected_at', 'ended_at', 'end_reason', 'direct_p2p_only', 'client_operation_id', 'last_client_operation_id', 'last_operation_by_user_id', 'last_operation_type'];
 
     protected function casts(): array
     {
@@ -47,5 +48,15 @@ class LiveSession extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(SessionTask::class, 'session_id')->orderBy('sequence_no');
+    }
+
+    public function report(): HasOne
+    {
+        return $this->hasOne(SessionReport::class, 'session_id');
+    }
+
+    public function outboxMessages(): HasMany
+    {
+        return $this->hasMany(RealtimeOutboxMessage::class, 'session_id');
     }
 }

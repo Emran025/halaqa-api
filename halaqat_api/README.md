@@ -21,6 +21,10 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Quran Halaqa membership lifecycle API
+
+The compatibility contract keeps `GET /api/v1/halaqas/{halaqaId}/students` unchanged as a student-viewing endpoint. Teacher-owned membership lifecycle screens that need `membership.id`, membership status, and pagination must use `GET /api/v1/halaqas/{halaqaId}/memberships` instead. The new endpoint returns a named `memberships` collection and explicit `meta` fields, supports `status`, `search` by public student name, `page`, and `per_page`, and is authorized only for the teacher who owns the halaqa. It does not expose private student-profile fields beyond the existing `UserResource` contract.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.

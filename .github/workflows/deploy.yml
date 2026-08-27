@@ -1,0 +1,211 @@
+name: Quran Halaqa Laravel Deploy
+
+on:
+  push:
+    branches:
+      - feature/session-mushaf-state
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quran-halaqa-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PHP_VERSION: '8.2'
+  NODE_VERSION: '20'
+
+jobs:
+  quality:
+    name: Deployment quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: halaqat_api
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+
+      - name: Validate Composer manifest
+        run: composer validate --strict
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader
+
+      - name: Prepare SQLite test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+          mkdir -p database
+          touch database/database.sqlite
+
+      - name: Verify migrations and reference seed
+        run: |
+          php artisan migrate:fresh --force
+          php artisan db:seed --force
+
+      - name: Check Laravel code style
+        run: vendor/bin/pint --test
+
+      - name: Run Laravel tests
+        run: php artisan test --compact
+
+  deploy:
+    name: Deploy to configured SSH server
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: halaqat_api
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, pdo_mysql
+          coverage: none
+
+      - name: Install production PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: halaqat_api/package-lock.json
+
+      - name: Build Laravel frontend assets
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build
+
+      - name: Configure SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Install pinned SSH host key
+        env:
+          SERVER_KNOWN_HOSTS: ${{ secrets.SERVER_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$SERVER_KNOWN_HOSTS" || {
+            echo 'SERVER_KNOWN_HOSTS is required; refusing TOFU ssh-keyscan deployment.'
+            exit 1
+          }
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$SERVER_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Verify required deployment settings
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          PROJECT_DOMAIN: ${{ secrets.PROJECT_DOMAIN }}
+        run: |
+          set -euo pipefail
+          test -n "$SERVER_HOST" || { echo 'Missing SERVER_HOST'; exit 1; }
+          test -n "$SERVER_USERNAME" || { echo 'Missing SERVER_USERNAME'; exit 1; }
+          test -n "$PROJECT_DOMAIN" || { echo 'Missing PROJECT_DOMAIN'; exit 1; }
+
+      - name: Upload application release
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          PROJECT_DOMAIN: ${{ secrets.PROJECT_DOMAIN }}
+        run: |
+          set -euo pipefail
+          SERVER_PORT="${SERVER_PORT:-22}"
+          BASE="/home/${SERVER_USERNAME}/web/${PROJECT_DOMAIN}"
+          FINAL="$BASE/public_html"
+          ssh -p "$SERVER_PORT" "$SERVER_USERNAME@$SERVER_HOST" "mkdir -p '$FINAL'"
+          rsync -az --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.env' \
+            --exclude='node_modules' \
+            --exclude='storage' \
+            --exclude='database/*.sqlite' \
+            --exclude='tests' \
+            --exclude='.agent' \
+            --exclude='phpunit.xml' \
+            --exclude='package.json' \
+            --exclude='package-lock.json' \
+            --exclude='vite.config.js' \
+            -e "ssh -p $SERVER_PORT" \
+            ./ "$SERVER_USERNAME@$SERVER_HOST:$FINAL/"
+
+      - name: Activate Laravel release
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          PROJECT_DOMAIN: ${{ secrets.PROJECT_DOMAIN }}
+          SERVER_WEBSOCKET_SERVICE: ${{ secrets.SERVER_WEBSOCKET_SERVICE }}
+        run: |
+          set -euo pipefail
+          SERVER_PORT="${SERVER_PORT:-22}"
+          BASE="/home/${SERVER_USERNAME}/web/${PROJECT_DOMAIN}"
+          REMOTE_COMMAND="BASE=$(printf '%q' "$BASE") SERVER_WEBSOCKET_SERVICE=$(printf '%q' "$SERVER_WEBSOCKET_SERVICE") bash -s"
+          ssh -p "$SERVER_PORT" "$SERVER_USERNAME@$SERVER_HOST" "$REMOTE_COMMAND" <<'REMOTE_SCRIPT'
+          set -euo pipefail
+          FINAL="$BASE/public_html"
+          cd "$FINAL"
+
+          if [ -f "$BASE/private/.env" ]; then
+            ENV_PATH="$BASE/private/.env"
+          elif [ -f "$BASE/.env" ]; then
+            echo 'Migrating existing .env to private/.env'
+            mkdir -p "$BASE/private"
+            mv "$BASE/.env" "$BASE/private/.env"
+            ENV_PATH="$BASE/private/.env"
+          else
+            echo 'Missing server-side environment file: create private/.env before deploying.'
+            exit 1
+          fi
+          ln -sfn "$ENV_PATH" "$FINAL/.env"
+
+          mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs storage/app/public
+          chmod -R ug+rwX storage bootstrap/cache
+
+          php artisan optimize:clear
+          php artisan storage:link --force
+          php artisan migrate --force
+          php artisan db:seed --force
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+
+          CRON_LINE="* * * * * cd $FINAL && php artisan schedule:run >> $BASE/private/scheduler.log 2>&1"
+          (crontab -l 2>/dev/null | grep -Fv 'php artisan schedule:run' || true; echo "$CRON_LINE") | crontab -
+
+          if [ -n "$SERVER_WEBSOCKET_SERVICE" ]; then
+            if command -v supervisorctl >/dev/null 2>&1; then
+              supervisorctl restart "$SERVER_WEBSOCKET_SERVICE"
+            elif command -v systemctl >/dev/null 2>&1 && systemctl --user list-unit-files "$SERVER_WEBSOCKET_SERVICE.service" >/dev/null 2>&1; then
+              systemctl --user restart "$SERVER_WEBSOCKET_SERVICE.service"
+            else
+              echo 'Configured SERVER_WEBSOCKET_SERVICE was not found under supervisor or user systemd.'
+              exit 1
+            fi
+          else
+            echo 'Warning: SERVER_WEBSOCKET_SERVICE is not configured; REST deploy completed but internal WebSocket was not restarted.'
+          fi
+          REMOTE_SCRIPT

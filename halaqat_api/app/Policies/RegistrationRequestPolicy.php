@@ -18,8 +18,9 @@ class RegistrationRequestPolicy
         }
 
         return $registrationRequest->teacher_id === $user->id
-            || ($registrationRequest->routing_mode === 'all_available_teachers' && $registrationRequest->state === 'pending'
-                && $registrationRequest->student()->where('gender', $user->gender)->where('country', $user->country)->exists())
+            || ($registrationRequest->routing_mode === 'all_available_teachers'
+                && in_array($registrationRequest->state, ['pending', 'completion_requested'], true)
+                && $this->matchesApplicantSnapshot($user, $registrationRequest))
             || $registrationRequest->requestedHalaqa()->where('teacher_id', $user->id)->exists();
     }
 
@@ -31,8 +32,18 @@ class RegistrationRequestPolicy
 
         return $registrationRequest->teacher_id === $user->id
             || ($registrationRequest->routing_mode === 'all_available_teachers'
-                && $registrationRequest->student()->where('gender', $user->gender)->where('country', $user->country)->exists())
+                && $this->matchesApplicantSnapshot($user, $registrationRequest))
             || $registrationRequest->requestedHalaqa()->where('teacher_id', $user->id)->exists();
+    }
+
+    private function matchesApplicantSnapshot(User $teacher, RegistrationRequest $request): bool
+    {
+        $profile = $request->relationLoaded('profile') ? $request->profile : $request->profile()->first();
+        $student = $request->relationLoaded('student') ? $request->student : $request->student()->first();
+
+        return $profile !== null
+            ? $profile->gender === $teacher->gender && $profile->country === $teacher->country
+            : $student?->gender === $teacher->gender && $student?->country === $teacher->country;
     }
 
     public function cancel(User $user, RegistrationRequest $registrationRequest): bool

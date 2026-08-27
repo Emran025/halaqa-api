@@ -3,7 +3,7 @@ info:
   title: Quran Halaqa Live API
   version: 1.1.0
   description: |
-    العقد الرسمي للاتصال بين تطبيق WPF للمعلم أو الطالب وخادم Laravel الوحيد.
+    العقد الرسمي للاتصال بين تطبيق WPF على `.NET 8 (net8.0-windows)` للمعلم أو الطالب وخادم Laravel الوحيد.
     يستخدم REST للبيانات الرسمية القابلة للحفظ، ويستخدم WebSocket الداخلي المضمن
     داخل Laravel للإشارة وحالة القناة فقط. تنتقل الوسائط الصوتية والمرئية وبيانات
     التفاعل المباشر عبر WebRTC P2P مباشرة بين المعلم والطالب دون Media Server أو
@@ -804,6 +804,32 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /halaqas/{halaqaId}/memberships:
+    parameters:
+      - $ref: '#/components/parameters/HalaqaId'
+    get:
+      tags: [Halaqas, Memberships]
+      summary: قائمة عضويات الحلقة لإدارة دورة حياة العضوية
+      description: List the halaqa memberships that the current user is authorized to manage.
+      operationId: listHalaqaMemberships
+      parameters:
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: عضويات الحلقة مع معرف العضوية والطالب المسموح بعرضه
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipCollectionResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /halaqas/{halaqaId}/memberships/{membershipId}:
     parameters:
       - $ref: '#/components/parameters/HalaqaId'
@@ -1295,6 +1321,33 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+  /sessions/{sessionId}/direct-connection-unavailable:
+    post:
+      tags: [Sessions, Realtime]
+      summary: تسجيل تعذر الاتصال المباشر
+      description: Marks the official session state as direct_connection_unavailable without introducing a mediated transport path.
+      operationId: markDirectConnectionUnavailable
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DirectConnectionUnavailableInput'
+      responses:
+        '200':
+          description: تم تسجيل فشل الاتصال المباشر دون إنهاء الجلسة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /sessions/{sessionId}/tasks:
     parameters:
       - $ref: '#/components/parameters/SessionId'
@@ -1628,6 +1681,8 @@ paths:
                 $ref: '#/components/schemas/MushafStateResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       tags: [Quran, Sessions]
       summary: حفظ موضع المصحف ونطاق التلاوة
@@ -3281,6 +3336,20 @@ components:
     ReportState:
       type: string
       enum: [draft, pending_student_acknowledgment, completed, reopened]
+    DirectConnectionUnavailableInput:
+      additionalProperties: false
+      type: object
+      required: [reason, client_operation_id]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: سبب فشل الاتصال المباشر كما سجله الطرف الحالي.
+        client_operation_id:
+          type: string
+          format: uuid
+          description: معرف retry الآمن لهذه العملية.
     CreateSessionInput:
       additionalProperties: false
       type: object
@@ -4481,6 +4550,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/User'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    MembershipCollectionResponse:
+      additionalProperties: false
+      type: object
+      required: [memberships, meta]
+      properties:
+        memberships:
+          description: عضويات الحلقة التي يملك المستخدم الحالي صلاحية إدارتها.
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
     MembershipResponse:

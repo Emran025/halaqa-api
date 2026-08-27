@@ -5,7 +5,10 @@ namespace App\Services\Auth;
 use App\Exceptions\ApiConflictException;
 use App\Models\FollowUpPlan;
 use App\Models\FollowUpPlanDetail;
+use App\Models\Notification;
 use App\Models\RegistrationRequest;
+use App\Models\RegistrationRequestAvailability;
+use App\Models\RegistrationRequestAvailabilitySlot;
 use App\Models\RegistrationRequestProfile;
 use App\Models\StudentAvailabilityProfile;
 use App\Models\StudentAvailabilitySlot;
@@ -39,6 +42,8 @@ class AuthService
                 'memorization_level' => $data['memorization_level'] ?? ($previous['memorization_level'] ?? null),
                 'review_level' => $data['review_level'] ?? ($previous['review_level'] ?? null),
                 'memorized_juz_count' => $previous['memorized_juz_count'] ?? null,
+                'memorized_surah_ids' => $previous['memorized_surah_ids'] ?? null,
+                'last_completed_unit' => $previous['last_completed_unit'] ?? null,
                 'previous_memorization_notes' => $previous['previous_teacher_notes'] ?? null,
                 'stop_reasons' => $previous['stop_reasons'] ?? null,
                 'bio' => $data['profile_bio'] ?? null,
@@ -262,9 +267,48 @@ class AuthService
             'memorization_level' => $student->studentProfile->memorization_level,
             'review_level' => $student->studentProfile->review_level,
             'memorized_juz_count' => $previous['memorized_juz_count'] ?? null,
+            'memorized_surah_ids' => $previous['memorized_surah_ids'] ?? null,
+            'last_completed_unit' => $previous['last_completed_unit'] ?? null,
             'previous_memorization_notes' => $previous['previous_teacher_notes'] ?? null,
+            'stop_reasons' => $previous['stop_reasons'] ?? null,
             'profile_bio' => $data['profile_bio'] ?? null,
         ]);
+
+        $attendance = $data['attendance_preferences'];
+        RegistrationRequestAvailability::create([
+            'registration_request_id' => $request->id,
+            'timezone' => $attendance['timezone'],
+            'preferred_session_duration_minutes' => $attendance['preferred_session_duration_minutes'] ?? 30,
+        ]);
+        foreach ($attendance['weekly_slots'] as $slot) {
+            RegistrationRequestAvailabilitySlot::create([
+                'registration_request_id' => $request->id,
+                'day_of_week' => $slot['day_of_week'],
+                'available_from' => $slot['from'],
+                'available_to' => $slot['to'],
+                'is_preferred' => $slot['preferred'] ?? false,
+            ]);
+        }
+
+        $teacherIds = $teacher !== null
+            ? collect([$teacher->id])
+            : User::query()->where('role', 'teacher')->where('status', 'active')
+                ->where('gender', $student->gender)
+                ->where('country', $student->country)
+                ->pluck('id');
+        foreach ($teacherIds as $teacherId) {
+            Notification::firstOrCreate(
+                ['dedupe_key' => 'registration-request:submitted:'.$request->id.':'.$teacherId],
+                [
+                    'id' => (string) Str::uuid(),
+                    'user_id' => $teacherId,
+                    'type' => 'registration_request',
+                    'title' => 'Registration request update',
+                    'body' => 'A new student registration request is available.',
+                    'payload' => ['entity_type' => 'registration_request', 'entity_id' => (string) $request->id, 'action' => 'view'],
+                ],
+            );
+        }
 
         return $request;
     }

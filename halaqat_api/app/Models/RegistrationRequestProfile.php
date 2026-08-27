@@ -16,7 +16,8 @@ class RegistrationRequestProfile extends Model
     protected $fillable = [
         'registration_request_id', 'gender', 'birth_date', 'country', 'city', 'residence',
         'phone', 'phone_zone', 'whatsapp_phone', 'whatsapp_zone', 'memorization_level',
-        'review_level', 'memorized_juz_count', 'previous_memorization_notes', 'profile_bio',
+        'review_level', 'memorized_juz_count', 'memorized_surah_ids', 'last_completed_unit',
+        'previous_memorization_notes', 'stop_reasons', 'profile_bio',
     ];
 
     protected function casts(): array
@@ -24,6 +25,8 @@ class RegistrationRequestProfile extends Model
         return [
             'birth_date' => 'date:Y-m-d',
             'memorized_juz_count' => 'decimal:1',
+            'memorized_surah_ids' => 'array',
+            'last_completed_unit' => 'array',
         ];
     }
 

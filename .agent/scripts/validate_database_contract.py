@@ -22,7 +22,7 @@ EXPECTED_TABLES = {
     "mistake_types", "quran_editions", "quran_surahs", "quran_pages",
     "quran_ayahs", "quran_ayah_words", "quran_range_units",
     "follow_up_plans", "follow_up_plan_details", "follow_up_items",
-    "live_sessions", "session_mushaf_states", "session_tasks", "daily_trackings", "tracking_details",
+    "live_sessions", "realtime_outbox_messages", "session_mushaf_states", "session_tasks", "daily_trackings", "tracking_details",
     "mistakes", "task_notes", "task_evaluations", "session_reports",
     "notifications", "idempotency_keys", "personal_access_tokens",
     "password_reset_tokens", "audit_events", "jobs", "failed_jobs",

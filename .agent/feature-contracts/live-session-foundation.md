@@ -25,11 +25,19 @@ CreateSessionRequest -> LiveSessionService -> LiveSession/HalaqaMembership/Track
 
 ## امتداد سجل المتابعة
 
-أضيفت جداول `daily_trackings` و`tracking_details` وModel طبقي لها، مع `GET /api/v1/students/{student}/trackings` وRequest وResource صريحين. عند إنشاء مهمة جلسة تُنشئ الخدمة تفصيل تتبع draft وسجل اليوم بشكل ذري، مع unique على `session_task_id`، ليكون التفصيل الأب الرسمي للأخطاء. يقرأ الطالب سجله، ويقرأه المعلم المرتبط بعضوية فعالة فقط؛ لا يكفي حساب معلم غير مرتبط. ما زالت عمليات إكمال المهمة وتحديث الحضور التفصيلية خارج هذه الشريحة.
+أضيفت جداول `daily_trackings` و`tracking_details` وModel طبقي لها، مع `GET /api/v1/students/{student}/trackings` وRequest وResource صريحين. عند إنشاء مهمة جلسة تُنشئ الخدمة تفصيل تتبع draft وسجل اليوم بشكل ذري، مع unique على `session_task_id`، ليكون التفصيل الأب الرسمي للأخطاء. يعرض الإسقاط الآن `details` و`mistakes` المرتبطة مع الوحدات والدرجات والحالات. يقرأ الطالب سجله، ويقرأه المعلم المرتبط بعضوية فعالة فقط؛ لا يكفي حساب معلم غير مرتبط. ما زالت عمليات إكمال المهمة وتحديث الحضور التفصيلية خارج هذه الشريحة.
+
+## امتداد حالة المصحف الرسمية
+
+أضيفت Migration وModel وRequest وResource و`SessionMushafStateService` لمساري `GET/PUT /api/v1/sessions/{session}/mushaf-state`. تقصر `LiveSessionPolicy` القراءة والحفظ على طرفي الجلسة، ويتحقق Service من وجود الإصدار والصفحة وانتماء السورة والآية والنطاق إلى الإصدار نفسه، مع حفظ `version` و`last_client_operation_id` داخل Transaction. لا تُحفظ أي وسائط أو SDP أو ICE. يعيد GET حالة موجودة فقط، ولذلك تكون الجلسة التي لم تحفظ حالة مصحف بعد مستجيبة بـ404.
 
 ## امتداد تخزين الأخطاء والملاحظات والتقييمات
 
 أضيفت جداول `mistakes`, `task_notes`, و`task_evaluations` مع نماذج Soft Delete للأخطاء والملاحظات، وcomposite Quran FKs، وclient_operation_id فريد للأخطاء والملاحظات، وقيد تقييم واحد لكل مقيّم ومهمة. اكتملت مسارات أخطاء المهمة GET/POST/PATCH/DELETE، ومسارات الملاحظات GET/POST/PATCH/DELETE، ومسارات التقييم GET/PUT، مع Requests وResources وPolicies وSessionAnnotationService واختبارات HTTP للملكية والتكرار والنطاقات والحذف المنطقي. لا تزال قائمة أخطاء الطالب التاريخية مرتبطة بمسار القراءة السابق، ولا تُعد تقارير الجلسة أو حالات المهمة المتقدمة مكتملة بهذه الشريحة.
+
+## امتداد REST للاتصال اللحظي
+
+أضيفت مسارات `GET /api/v1/sessions/{session}/realtime` و`POST /api/v1/sessions/{session}/reconnect` و`POST /api/v1/realtime/channels/authorize`. تعيد إعدادات realtime قناة `private-live-session.{session_id}` وعنوان WebSocket الداخلي وسياسة `laravel_websocket` و`host_only` و`webrtc_peer_to_peer` مع `direct_p2p_only=true`، دون STUN أو TURN أو Relay أو Media Server. يقصر `LiveSessionPolicy` المسارات على طرفي جلسة مقبولة أو حية، ويحوّل reconnect الحالة الرسمية إلى `reconnecting` داخل Transaction. يتحقق تفويض القناة من اسم القناة ومطابقته للجلسة ومن هوية الطرف، ويعيد المعرّف المقابل وانتهاء تفويض قصير. تنفيذ WebSocket الداخلي وتمرير رسائل signaling الفعلية ما زال شريحة لاحقة ولا يُعد منفذًا بمجرد توفر إعدادات REST.
 
 ## قائمة أخطاء الطالب
 

@@ -11,7 +11,7 @@ class RegistrationCollectionResource extends JsonResource
     {
         return [
             'registration_requests' => RegistrationRequestResource::collection($this->resource->items()),
-            'pagination' => [
+            'meta' => [
                 'current_page' => $this->resource->currentPage(),
                 'per_page' => $this->resource->perPage(),
                 'total' => $this->resource->total(),

@@ -29,6 +29,7 @@ users
 ├── follow_up_plans ──< follow_up_plan_details ──< follow_up_items
 ├── live_sessions ──< session_mushaf_states
 ├── live_sessions ──< session_tasks ──< tracking_details ──< mistakes
+├── live_sessions ──< realtime_outbox_messages
 ├── daily_trackings ──< tracking_details
 ├── session_reports
 ├── task_notes
@@ -93,6 +94,8 @@ tracking_units ──< follow_up_plan_details, quran_range_units
 | `memorization_level` | `VARCHAR(120)` | نعم | المستوى السابق أو الحالي. |
 | `review_level` | `VARCHAR(120)` | نعم | مستوى المراجعة. |
 | `memorized_juz_count` | `DECIMAL(4,1) UNSIGNED` | نعم | من 0 إلى 30. |
+| `memorized_surah_ids` | `JSON` | نعم | معرفات السور المحفوظة، كل معرف من 1 إلى 114. |
+| `last_completed_unit` | `JSON` | نعم | آخر وحدة مكتملة مع نوع المهمة والوحدة والكمية والملاحظة. |
 | `previous_memorization_notes` | `TEXT` | نعم | وصف الخبرة أو الملاحظات السابقة. |
 | `stop_reasons` | `TEXT` | نعم | أسباب التوقف السابقة عند وجودها. |
 | `bio` | `TEXT` | نعم | تعريف الطالب. |
@@ -168,7 +171,7 @@ tracking_units ──< follow_up_plan_details, quran_range_units
 
 يحفظ Snapshot كاملًا للبيانات التي قدمها الطالب وقت الطلب، ولا يعاد كاملًا من قائمة الطلبات العامة.
 
-يشمل: الجنس، تاريخ الميلاد، الدولة، المدينة، السكن، الهاتف ورمز الدولة، WhatsApp ورموزه، مستوى الحفظ، مستوى المراجعة، عدد الأجزاء، الملاحظات السابقة، والسيرة المختصرة.
+يشمل: الجنس، تاريخ الميلاد، الدولة، المدينة، السكن، الهاتف ورمز الدولة، WhatsApp ورموزه، مستوى الحفظ، مستوى المراجعة، عدد الأجزاء، معرفات السور المحفوظة، آخر وحدة مكتملة، الملاحظات السابقة، والسيرة المختصرة.
 
 ### قاعدة الإسقاط الآمن
 
@@ -201,7 +204,7 @@ tracking_units ──< follow_up_plan_details, quran_range_units
 
 ### `follow_up_items`
 
-يمثل الموعد الفعلي الناتج عن الخطة. يحتوي على الطالب والحلقة إن وجدت، وقت التنفيذ، المنطقة الزمنية، الحالة، وقت الإكمال أو التجاوز، سبب التجاوز، رابط إعادة الجدولة، ووقت إرسال التنبيه. تنشئ Service هذه العناصر، ولا ينشئها Controller أو Cron closure مباشرة.
+يمثل الموعد الفعلي الناتج عن الخطة. يحتوي على الطالب والحلقة إن وجدت، وقت التنفيذ، المنطقة الزمنية، الحالة، وقت الإكمال أو التجاوز، سبب التجاوز، رابط إعادة الجدولة، ووقت إرسال التنبيه. وتحتفظ الأعمدة الداخلية `last_client_operation_id` و`last_operation_by_user_id` و`last_operation_type` بآخر عملية قابلة لإعادة المحاولة، بينما يحفظ `reschedule_reason` سبب إنشاء الموعد الجديد. يضمن UUID الفريد عدم تكرار العملية، وتتحقق Service من هوية صاحبها وحالتها، ولا ينشئ العناصر Controller أو Cron closure مباشرة.
 
 ## المصحف المرجعي
 
@@ -222,13 +225,19 @@ tracking_units ──< follow_up_plan_details, quran_range_units
 
 ### `live_sessions`
 
-يربط الحلقة والمعلم والطالب وعنصر المتابعة، ويخزن `task_type_id` وحالة الجلسة والجدولة وخطها الزمني. يفرض الحقل `direct_p2p_only = TRUE` داخل قاعدة البيانات، ويضاف إلى Policy تحقق أن المعلم والطالب طرفا الجلسة.
+يربط الحلقة والمعلم والطالب وعنصر المتابعة، ويخزن `task_type_id` وحالة الجلسة والجدولة وخطها الزمني. يفرض الحقل `direct_p2p_only = TRUE` داخل قاعدة البيانات، ويضاف إلى Policy تحقق أن المعلم والطالب طرفا الجلسة. تحفظ `last_client_operation_id` و`last_operation_by_user_id` و`last_operation_type` آخر انتقال رسمي قابل لإعادة المحاولة مع قيد unique على معرف العملية الأخيرة.
 
 حالات الجلسة هي `requested`, `accepted`, `connecting`, `direct_negotiation`, `connected`, `weak_connection`, `reconnecting`, `disconnected`, `direct_connection_unavailable`, `ended`, `cancelled`, و`rejected`.
 
+### `realtime_outbox_messages`
+
+يسجل رسائل server-originated الرسمية التي أنشأها Laravel بعد نجاح transaction، ويجعلها متاحة لخادم WebSocket الداخلي لتسليمها للطرف المقصود. يحتوي على `id` كمعرف الرسالة، و`session_id`، و`recipient_id`، و`event_type`، و`dedupe_key` الفريد، و`payload` JSON، و`delivered_at`، و`attempts`، و`last_attempted_at` والطوابع الزمنية. لا يسمح إلا بأنواع `session.requested`, `session.accepted`, `session.rejected`, `session.state_changed`, `session.ended`, `report.updated`, و`realtime.direct_connection_unavailable`. لا يحتوي payload على صوت أو فيديو أو SDP أو ICE، ولا يعد outbox مصدر الحقيقة؛ مصدر الحقيقة هو جدول الجلسة أو التقرير.
+
+يحمل خادم WebSocket الرسائل pending بترتيب الإنشاء، ويتحقق من أن `session_id` و`recipient_id` طرفان في الجلسة قبل الكتابة، ثم يحدد `delivered_at` بعد نجاح إرسال الإطار فقط. يبقى السجل pending عند توقف الخادم، وتستخدم هذه الشريحة خادم WebSocket داخليًا واحدًا لكل بيئة تشغيل؛ لا تدّعي claim موزعًا بين نسخ متعددة.
+
 ### `session_mushaf_states`
 
-يحفظ آخر حالة رسمية للمصحف داخل الجلسة: إصدار المصحف، الصفحة الحالية، السورة والآية الحالية عند وجودهما، نطاق التلاوة، المستخدم الذي حفظ الحالة، رقم الإصدار، والطوابع الزمنية. لا يحفظ هذا الجدول أي نص صوتي أو فيديو أو SDP أو ICE. تكون العلاقة واحدًا لواحد مع `live_sessions`، وتتحقق Service من أن السورة والآيات والنطاق تنتمي إلى `edition_id` نفسه.
+يحفظ آخر حالة رسمية للمصحف داخل الجلسة: إصدار المصحف، الصفحة الحالية، السورة والآية الحالية عند وجودهما، نطاق التلاوة، المستخدم الذي حفظ الحالة، رقم الإصدار، `last_client_operation_id` الاختياري لمنع تكرار retry، والطوابع الزمنية. لا يحفظ هذا الجدول أي نص صوتي أو فيديو أو SDP أو ICE. تكون العلاقة واحدًا لواحد مع `live_sessions`، وتتحقق Service من أن السورة والآيات والنطاق تنتمي إلى `edition_id` نفسه.
 
 ### `session_tasks`
 
@@ -265,11 +274,11 @@ tracking_units ──< follow_up_plan_details, quran_range_units
 
 `task_notes` يدعم الملاحظة العامة أو المرتبطة بآية وكلمة، ويحتوي `client_operation_id` فريدًا لمنع إنشاء الملاحظة مرتين. و`task_evaluations` يسمح بتقييم المعلم وتقييم الطالب في السجل نفسه مع منع تكرار تقييم المقيم للمهمة.
 
-`session_reports` تقرير واحد لكل جلسة، مع الحالة والملخص والمدة وعدد المهام والأخطاء وإحصاء الأنواع ونسخة التقرير واعتماد المعلم وتأكيد الطالب وإعادة الفتح وسببها. يمثل `mistake_counts` JSON قائمة عناصر ذات `mistake_type` و`count` كما يحددها مخطط `MistakeCount` في OpenAPI، وليس خريطة مفاتيح غير معرفة. لا تنتقل الحالة إلى مكتملة إلا عبر Service اعتماد التقرير.
+`session_reports` تقرير واحد لكل جلسة، مع الحالة والملخص والمدة وعدد المهام والأخطاء وإحصاء الأنواع ونسخة التقرير واعتماد المعلم وتأكيد الطالب وإعادة الفتح وسببها. ويحفظ `teacher_approval_note` ملاحظة الاعتماد، بينما تحفظ أعمدة `last_client_operation_id` و`last_operation_by_user_id` و`last_operation_type` آخر عملية قابلة لإعادة المحاولة بفهرس UUID فريد. يمثل `mistake_counts` JSON قائمة عناصر ذات `mistake_type` و`count` كما يحددها مخطط `MistakeCount` في OpenAPI، وليس خريطة مفاتيح غير معرفة. لا تنتقل الحالة إلى مكتملة إلا عبر Service اعتماد التقرير ثم إقرار الطالب.
 
 ## الإشعارات والتتبع التقني
 
-`notifications` يخزن إشعار المستخدم ونوعه وعنوانه ونصه وحقل `payload` JSON الصريح ووقت قراءته. لا يستخدم العقد حقلًا عامًا باسم `data`. ويخزن `idempotency_keys` نتيجة العمليات القابلة لإعادة المحاولة حتى لا يتكرر الطلب عند ضعف الاتصال.
+`notifications` يخزن إشعار المستخدم ونوعه وعنوانه ونصه وحقل `payload` JSON الصريح ووقت قراءته. يقتصر `type` على `registration_request`, `session_scheduled`, `session_started`, `session_ended`, `report_ready`, `follow_up_due`, `reminder`, و`system`، مع `dedupe_key` إلزامي وفريد لمنع تكرار إشعار الحدث، وفهرس `(user_id, read_at, created_at)`. لا يستخدم العقد حقلًا عامًا باسم `data`. ويخزن `idempotency_keys` نتيجة العمليات القابلة لإعادة المحاولة حتى لا يتكرر الطلب عند ضعف الاتصال.
 
 `audit_events` ليس سجلًا تعليميًا؛ هو سجل تقني/تشغيلي محدود لتتبع من نفذ قرارًا ومتى وعلى أي مورد، ولا يخزن SDP أو ICE أو الصوت أو الفيديو.
 

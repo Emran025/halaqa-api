@@ -1,7 +1,7 @@
 # عقد الاتصال اللحظي
 ## Laravel WebSocket وWebRTC P2P
 
-هذا الملف مكمل لملف `openapi.yaml`. يصف القناة اللحظية التي يتصل بها تطبيق WPF مع خادم WebSocket المضمن داخل تطبيق Laravel نفسه.
+هذا الملف مكمل لملف `openapi.yaml`. يصف القناة اللحظية التي يتصل بها تطبيق WPF على `.NET 8 (net8.0-windows)` مع خادم WebSocket المضمن داخل تطبيق Laravel نفسه.
 
 ## المبادئ الملزمة
 
@@ -66,7 +66,7 @@ private-live-session.{session_id}
 | `task.changed` | المعلم | الطالب | يحفظ عبر Service عند اعتماده. |
 | `report.updated` | Laravel | الطرفان | حالة التقرير الرسمية. |
 | `session.ended` | Laravel | الطرفان | حالة الجلسة الرسمية. |
-| `realtime.direct_connection_unavailable` | Laravel/العميل | الطرفان | حالة فشل الاتصال المباشر، دون تحويل إلى Relay. |
+| `realtime.direct_connection_unavailable` | Laravel بعد REST الرسمي | الطرفان | حالة فشل الاتصال المباشر، دون تحويل إلى Relay. لا يقبلها الخادم كرسالة عميلة. |
 
 ## رسائل WebRTC
 
@@ -171,6 +171,16 @@ requested
 
 لا تعني `direct_connection_unavailable` أن Laravel سيحمل الوسائط أو أن النظام سيستخدم Relay. تعني فقط فشل الاتصال المباشر، ويمكن إعادة المحاولة أو إنهاء الجلسة.
 
+## نشر أحداث Laravel الرسمية بين العمليات
+
+تُنشئ خدمات Laravel بعد نجاح transaction رسائل server-originated في جدول `realtime_outbox_messages`. كل رسالة تحتوي `id`, `session_id`, `recipient_id`, `event_type`, `dedupe_key`, `payload`, `attempts`, `last_attempted_at`, `delivered_at` والطوابع الزمنية. لا يسمح العقد إلا بالأحداث الرسمية `session.requested`, `session.accepted`, `session.rejected`, `session.state_changed`, `session.ended`, `report.updated`, و`realtime.direct_connection_unavailable`.
+
+تقرأ عملية خادم WebSocket الرسائل غير المسلّمة بترتيب الإنشاء، وتتحقق من أن recipient طرف في الجلسة، ثم تبني envelope من مصدر الخادم (`source: server`, `sender_role: server`, `sender_id: null`) وترسله إلى recipient المطابق فقط. لا يثق الخادم في recipient أو type قادمين من العميل، ولا يضع `delivered_at` إلا بعد نجاح الكتابة. عند توقف الخادم تبقى الرسالة pending. هذه الشريحة تدعم خادم WebSocket داخليًا واحدًا لكل بيئة تشغيل ولا تدّعي claim موزعًا لعدة نسخ.
+
+## انتقال direct_connection_unavailable
+
+يستدعي الطرف المشارك `POST /api/v1/sessions/{sessionId}/direct-connection-unavailable` مع `reason` و`client_operation_id`. تتحقق Policy من طرفية المستخدم وحالة الجلسة، ويحفظ Service الحالة الرسمية ثم ينشر الحدث. يستطيع الطرفان طلب إعادة المحاولة عبر `POST /api/v1/sessions/{sessionId}/reconnect`. لا يؤدي هذا الانتقال إلى تحميل الوسائط أو إنشاء مسار بديل.
+
 ## تنفيذ Laravel الداخلي
 
 ```text
@@ -217,4 +227,4 @@ app/
 | `report.updated` | `report_id: uuid`, `state: enum`, `version: integer` | يرسلها Laravel بعد حفظ رسمي. |
 | `realtime.direct_connection_unavailable` | `state: direct_connection_unavailable`, `reason: string` | حالة رسمية للجلسة؛ لا تنشئ Relay أو مسارًا وسيطًا. |
 
-يجب أن يطبق `WebRtcSignalingService` تحققًا مستقلًا لكل نوع رسالة: صحة الحقول، مطابقة `session_id`، مطابقة المرسل والمستقبل، وعدم السماح بأن يجعل DataChannel أو WebSocket الحالة الرسمية بدل REST وService.
+يجب أن يطبق `WebRtcSignalingService` تحققًا مستقلًا لكل نوع رسالة عميلة: صحة الحقول، مطابقة `session_id`، مطابقة المرسل والمستقبل، وعدم السماح بأن يجعل DataChannel أو WebSocket الحالة الرسمية بدل REST وService. وتطبق طبقة outbox تحققًا مستقلًا على كل حدث صادر من Laravel قبل تسليمه.

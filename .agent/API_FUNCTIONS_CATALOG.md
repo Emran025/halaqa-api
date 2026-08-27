@@ -64,7 +64,8 @@
 | تعديل حلقة | `PATCH /halaqas/{halaqaId}` | المعلم المالك | `HalaqaPolicy@update`. |
 | تفعيل حلقة | `POST /halaqas/{halaqaId}/activate` | المعلم المالك | `HalaqaPolicy@activate`. |
 | إيقاف حلقة | `POST /halaqas/{halaqaId}/deactivate` | المعلم المالك | `HalaqaPolicy@deactivate`. |
-| قائمة طلاب الحلقة | `GET /halaqas/{halaqaId}/students` | المعلم المالك | `HalaqaPolicy@viewStudents`. |
+| قائمة طلاب الحلقة | `GET /halaqas/{halaqaId}/students` | المعلم المالك | `HalaqaPolicy@viewStudents`. تعيد User objects فقط لأغراض العرض، ولا تُستخدم لاكتشاف معرف العضوية. |
+| قائمة عضويات الحلقة | `GET /halaqas/{halaqaId}/memberships` | المعلم المالك | `HalaqaPolicy@manageMembers`. تعيد Membership objects مع `membership.id` لإدارة التحديث والإزالة، مع status/search/page/per_page. |
 | إسناد طالب مقبول | `POST /halaqas/{halaqaId}/students` | المعلم المالك | `AssignStudentToHalaqaService`. |
 | تحديث حالة العضوية | `PATCH /halaqas/{halaqaId}/memberships/{membershipId}` | المعلم المالك | `MembershipPolicy@update`. |
 | إزالة الطالب دون حذف التاريخ | `DELETE /halaqas/{halaqaId}/memberships/{membershipId}` | المعلم المالك | `RemoveStudentFromHalaqaService`. |
@@ -124,6 +125,7 @@
 | مغادرة الجلسة | `POST /sessions/{sessionId}/leave` | الطرفان | يسجل المغادرة ولا يعتمد التقرير. |
 | إنهاء الجلسة | `POST /sessions/{sessionId}/end` | المعلم | ينهي الاتصال المنطقي ويترك التقرير قابلًا للاعتماد. |
 | تسجيل إعادة الاتصال | `POST /sessions/{sessionId}/reconnect` | الطرفان | يعيد حالة التفاوض ويعيد إعدادات الاتصال عند الحاجة. |
+| تسجيل تعذر الاتصال المباشر | `POST /sessions/{sessionId}/direct-connection-unavailable` | الطرفان | يحفظ الحالة الرسمية `direct_connection_unavailable` وسبب الفشل مع `client_operation_id`، ثم ينشر الحدث للطرفين دون مسار وسائط بديل. |
 | إعدادات WebRTC | `GET /sessions/{sessionId}/realtime` | الطرفان | `GetRealtimeSessionConfigService` يعيد معرّفات الجلسة وإعدادات التفاوض المباشر فقط، ولا يعيد إعدادات STUN/TURN أو Relay أو أسرارًا دائمة. |
 | تفويض قناة WebSocket الداخلية | `POST /realtime/channels/authorize` | الطرفان | `LiveSessionChannelAuthorizer` داخل Laravel، دون Broadcasting أو مزود خارجي. |
 
