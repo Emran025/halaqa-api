@@ -13,7 +13,10 @@ return new class extends Migration
             $table->string('timezone', 64)->default('UTC');
             $table->unsignedSmallInteger('preferred_session_duration_minutes')->default(30);
             $table->timestamps();
-            $table->foreign('registration_request_id')->references('id')->on('registration_requests')->cascadeOnDelete();
+            $table->foreign(
+                'registration_request_id',
+                'fk_reg_req_avail_request'
+            )->references('id')->on('registration_requests')->cascadeOnDelete();
         });
 
         Schema::create('registration_request_availability_slots', function (Blueprint $table): void {
@@ -26,7 +29,10 @@ return new class extends Migration
             $table->timestamps();
             $table->unique(['registration_request_id', 'day_of_week', 'available_from', 'available_to'], 'uq_registration_availability_slot');
             $table->index(['registration_request_id', 'day_of_week']);
-            $table->foreign('registration_request_id')->references('id')->on('registration_requests')->cascadeOnDelete();
+            $table->foreign(
+                'registration_request_id',
+                'fk_reg_req_avail_slot_request'
+            )->references('id')->on('registration_requests')->cascadeOnDelete();
         });
     }
 
