@@ -8,19 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('registration_request_availability')) {
-            Schema::table('registration_request_availability', function (Blueprint $table): void {
-                $table->foreign(
-                    'registration_request_id',
-                    'fk_reg_req_avail_request'
-                )->references('id')->on('registration_requests')->cascadeOnDelete();
-            });
-        } else {
+        if (! Schema::hasTable('registration_request_availability')) {
             Schema::create('registration_request_availability', function (Blueprint $table): void {
                 $table->uuid('registration_request_id')->primary();
                 $table->string('timezone', 64)->default('UTC');
                 $table->unsignedSmallInteger('preferred_session_duration_minutes')->default(30);
                 $table->timestamps();
+            });
+        }
+
+        if (! Schema::hasIndex('registration_request_availability', 'fk_reg_req_avail_request', 'foreign')) {
+            Schema::table('registration_request_availability', function (Blueprint $table): void {
                 $table->foreign(
                     'registration_request_id',
                     'fk_reg_req_avail_request'
@@ -37,8 +35,29 @@ return new class extends Migration
                 $table->time('available_to');
                 $table->boolean('is_preferred')->default(false);
                 $table->timestamps();
-                $table->unique(['registration_request_id', 'day_of_week', 'available_from', 'available_to'], 'uq_registration_availability_slot');
-                $table->index(['registration_request_id', 'day_of_week']);
+            });
+        }
+
+        if (! Schema::hasIndex('registration_request_availability_slots', 'uq_reg_req_avail_slot', 'unique')) {
+            Schema::table('registration_request_availability_slots', function (Blueprint $table): void {
+                $table->unique(
+                    ['registration_request_id', 'day_of_week', 'available_from', 'available_to'],
+                    'uq_reg_req_avail_slot'
+                );
+            });
+        }
+
+        if (! Schema::hasIndex('registration_request_availability_slots', 'idx_reg_req_avail_slot_day')) {
+            Schema::table('registration_request_availability_slots', function (Blueprint $table): void {
+                $table->index(
+                    ['registration_request_id', 'day_of_week'],
+                    'idx_reg_req_avail_slot_day'
+                );
+            });
+        }
+
+        if (! Schema::hasIndex('registration_request_availability_slots', 'fk_reg_req_avail_slot_request', 'foreign')) {
+            Schema::table('registration_request_availability_slots', function (Blueprint $table): void {
                 $table->foreign(
                     'registration_request_id',
                     'fk_reg_req_avail_slot_request'
