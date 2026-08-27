@@ -3,7 +3,7 @@ name: Quran Halaqa Laravel Deploy
 on:
   push:
     branches:
-      - main
+      - fix/deploy-mysql-compatibility
   workflow_dispatch:
 
 permissions:
@@ -185,10 +185,10 @@ jobs:
           mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs storage/app/public
           chmod -R ug+rwX storage bootstrap/cache
 
-          php artisan optimize:clear
-          php artisan storage:link --force
           php artisan migrate --force
           php artisan db:seed --force
+          php artisan optimize:clear
+          php artisan storage:link --force
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
