@@ -3,7 +3,7 @@ name: Quran Halaqa Laravel Deploy
 on:
   push:
     branches:
-      - fix/deploy-mysql-compatibility
+      - main
   workflow_dispatch:
 
 permissions:
