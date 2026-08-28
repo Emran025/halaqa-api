@@ -325,7 +325,7 @@ class DemoHalaqaSeeder extends Seeder
             foreach (range(-14, 7) as $dayOffset) {
                 foreach ($plans[$key]['details'] as $detailKey => $detail) {
                     $recitationDay = (($dayOffset % 7) + 7) % 7;
-                    if ($detailKey === 'recitation' && ! in_array($recitationDay, [1, 4], true)) {
+                    if ($detailKey === 'recitation' && !in_array($recitationDay, [1, 4], true)) {
                         continue;
                     }
 
@@ -757,7 +757,7 @@ class DemoHalaqaSeeder extends Seeder
     private function rangeId(array $rangeIds, string $unitCode, int $unitIndex): int
     {
         $key = "{$unitCode}:{$unitIndex}";
-        if (! isset($rangeIds[$key])) {
+        if (!isset($rangeIds[$key])) {
             throw new RuntimeException("نطاق وحدة المصحف غير موجود: {$key}");
         }
 
