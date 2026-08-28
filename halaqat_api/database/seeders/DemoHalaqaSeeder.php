@@ -315,9 +315,9 @@ class DemoHalaqaSeeder extends Seeder
     }
 
     /** @param array<string, array<string, int|float|string>> $students
-     * @param array<string, string> $memberships
-     * @param array<string, array{id: string, details: array<string, array{id: string, type_id: int, unit_id: int, amount: int|float, notes: string}>}> $plans
-     * @param array<string, int> $rangeIds
+     * @param  array<string, string>  $memberships
+     * @param  array<string, array{id: string, details: array<string, array{id: string, type_id: int, unit_id: int, amount: int|float, notes: string}>}>  $plans
+     * @param  array<string, int>  $rangeIds
      */
     private function seedFollowUpItemsAndDailyTracking(CarbonImmutable $now, string $halaqaId, array $students, array $memberships, array $plans, array $rangeIds): void
     {
@@ -423,8 +423,8 @@ class DemoHalaqaSeeder extends Seeder
     }
 
     /** @param array<string, array<string, int|float|string>> $students
-     * @param array<string, array{id: string, details: array<string, array{id: string, type_id: int, unit_id: int, amount: int|float, notes: string}>}> $plans
-     * @param array<string, int> $rangeIds
+     * @param  array<string, array{id: string, details: array<string, array{id: string, type_id: int, unit_id: int, amount: int|float, notes: string}>}>  $plans
+     * @param  array<string, int>  $rangeIds
      */
     private function seedSessionsAndReports(CarbonImmutable $now, string $teacherId, string $halaqaId, array $students, array $plans, array $rangeIds, int $editionId): void
     {
@@ -696,7 +696,7 @@ class DemoHalaqaSeeder extends Seeder
     }
 
     /** @param array<string, array<string, int|float|string>> $students
-     * @param array<string, array{id: string, details: array<string, array{id: string, type_id: int, unit_id: int, amount: int|float, notes: string}>}> $plans
+     * @param  array<string, array{id: string, details: array<string, array{id: string, type_id: int, unit_id: int, amount: int|float, notes: string}>}>  $plans
      */
     private function seedNotifications(CarbonImmutable $now, string $teacherId, array $students, array $plans): void
     {
@@ -802,7 +802,7 @@ class DemoHalaqaSeeder extends Seeder
     }
 
     /** @param array<string, mixed> $key
-     * @param array<string, mixed> $values
+     * @param  array<string, mixed>  $values
      */
     private function write(string $table, array $key, array $values): void
     {
