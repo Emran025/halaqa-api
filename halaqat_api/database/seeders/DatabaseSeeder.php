@@ -11,6 +11,11 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        $this->call([MistakeTypeSeeder::class, QuranReferenceSeeder::class, QuranRangeUnitSeeder::class]);
+        $this->call([
+            MistakeTypeSeeder::class,
+            QuranReferenceSeeder::class,
+            QuranRangeUnitSeeder::class,
+            DemoHalaqaSeeder::class,
+        ]);
     }
 }
