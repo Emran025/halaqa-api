@@ -4177,7 +4177,8 @@ components:
       required: [follow_up_plan]
       properties:
         follow_up_plan:
-          description: خطة الطالب الحالية.
+          description: خطة الطالب الحالية، وتكون null إذا لم تُنشأ خطة بعد.
+          nullable: true
           $ref: '#/components/schemas/FollowUpPlan'
     AttendancePreferencesResponse:
       additionalProperties: false
