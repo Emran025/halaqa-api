@@ -50,6 +50,7 @@ class DemoHalaqaSeeder extends Seeder
             $memberships = $this->seedMemberships($now, $halaqa['id'], $students);
             $this->seedAvailability($now, $students, $applicant);
             $plans = $this->seedPlans($now, $teacher['id'], $students);
+            $this->seedApplicantPlan($now, $teacher['id'], $applicant);
             $editionId = $this->editionId();
             $rangeIds = $this->rangeIds($editionId);
             $this->seedFollowUpItemsAndDailyTracking($now, $halaqa['id'], $students, $memberships, $plans, $rangeIds);
@@ -312,6 +313,43 @@ class DemoHalaqaSeeder extends Seeder
         }
 
         return $plans;
+    }
+
+    /** @param array{id: string, name: string, email: string, username: string, birth_date: string, phone: string} $applicant */
+    private function seedApplicantPlan(CarbonImmutable $now, string $teacherId, array $applicant): void
+    {
+        $planId = $this->id('plan:ibrahim');
+        $detailId = $this->id('plan-detail:ibrahim:memorization');
+        $createdAt = $now->subDays(6)->toDateTimeString();
+
+        $this->write('follow_up_plans', ['id' => $planId], [
+            'id' => $planId,
+            'student_id' => $applicant['id'],
+            'created_by_user_id' => $teacherId,
+            'source_registration_request_id' => null,
+            'frequency' => 'daily',
+            'status' => 'active',
+            'timezone' => self::TIMEZONE,
+            'starts_on' => $now->subDays(6)->toDateString(),
+            'ends_on' => null,
+            'version' => 1,
+            'approved_by_user_id' => $teacherId,
+            'approved_at' => $now->subDays(5)->toDateTimeString(),
+            'created_at' => $createdAt,
+            'updated_at' => $now->toDateTimeString(),
+        ]);
+
+        $this->write('follow_up_plan_details', ['id' => $detailId], [
+            'id' => $detailId,
+            'plan_id' => $planId,
+            'tracking_type_id' => 1,
+            'tracking_unit_id' => 5,
+            'amount' => 1,
+            'notes' => 'حفظ صفحة واحدة يومياً مع تسميع مضبوط في الجلسة التالية.',
+            'sort_order' => 1,
+            'created_at' => $createdAt,
+            'updated_at' => $now->toDateTimeString(),
+        ]);
     }
 
     /** @param array<string, array<string, int|float|string>> $students
