@@ -398,11 +398,14 @@ class DemoHalaqaSeeder extends Seeder
             }
 
             foreach (range(-27, 0) as $dayOffset) {
-                $trackingId = $this->id("daily-tracking:{$key}:{$dayOffset}");
                 $attendance = $this->attendanceFor($key, $dayOffset);
                 $date = $this->at($dayOffset, 0)->setTimezone(self::TIMEZONE)->toDateString();
-                // The database enforces uniqueness by student and date. Use that
-                // business key so repeated production deploys update existing rows.
+                // Keep an existing UUID because tracking_details references it.
+                // The database enforces uniqueness by student and date.
+                $trackingId = DB::table('daily_trackings')
+                    ->where('student_id', $student['id'])
+                    ->where('date', $date)
+                    ->value('id') ?? $this->id("daily-tracking:{$key}:{$dayOffset}");
                 $this->write('daily_trackings', ['student_id' => $student['id'], 'date' => $date], [
                     'id' => $trackingId,
                     'membership_id' => $memberships[$key],
