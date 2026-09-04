@@ -24,7 +24,7 @@ class DemoHalaqaSeederTest extends TestCase
         $this->assertDatabaseHas('halaqas', ['teacher_id' => $teacher->id, 'name' => 'حلقة الإتقان اليومية', 'status' => 'active']);
         $this->assertSame(6, DB::table('halaqa_memberships')->where('status', 'active')->count());
         $this->assertSame(7, DB::table('follow_up_plans')->where('status', 'active')->count());
-        $this->assertSame(14, DB::table('follow_up_plan_details')->count());
+        $this->assertSame(15, DB::table('follow_up_plan_details')->count());
         $this->assertGreaterThanOrEqual(276, DB::table('follow_up_items')->count());
         $this->assertSame(168, DB::table('daily_trackings')->count());
         $this->assertGreaterThan(250, DB::table('tracking_details')->count());
@@ -37,7 +37,7 @@ class DemoHalaqaSeederTest extends TestCase
 
         $this->assertSame(8, DB::table('users')->count());
         $this->assertSame(6, DB::table('halaqa_memberships')->where('status', 'active')->count());
-        $this->assertSame(14, DB::table('follow_up_plan_details')->count());
+        $this->assertSame(15, DB::table('follow_up_plan_details')->count());
         $this->assertSame(3, DB::table('live_sessions')->count());
         $this->assertSame(5, DB::table('notifications')->count());
     }
