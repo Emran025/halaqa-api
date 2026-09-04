@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class DemoHalaqaSeeder extends Seeder
@@ -405,7 +406,15 @@ class DemoHalaqaSeeder extends Seeder
                 $trackingId = DB::table('daily_trackings')
                     ->where('student_id', $student['id'])
                     ->where('date', $date)
-                    ->value('id') ?? $this->id("daily-tracking:{$key}:{$dayOffset}");
+                    ->value('id');
+                if ($trackingId === null) {
+                    $trackingId = $this->id("daily-tracking:{$key}:{$dayOffset}");
+                    if (DB::table('daily_trackings')->where('id', $trackingId)->exists()) {
+                        // A previous seed version may have assigned this deterministic
+                        // id to a different date. Never overwrite that parent row.
+                        $trackingId = (string) Str::uuid();
+                    }
+                }
                 $this->write('daily_trackings', ['student_id' => $student['id'], 'date' => $date], [
                     'id' => $trackingId,
                     'membership_id' => $memberships[$key],
