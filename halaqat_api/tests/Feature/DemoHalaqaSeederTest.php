@@ -23,7 +23,7 @@ class DemoHalaqaSeederTest extends TestCase
         $this->assertDatabaseHas('teacher_profiles', ['user_id' => $teacher->id, 'teacher_code' => 'ITQAN-AR-01']);
         $this->assertDatabaseHas('halaqas', ['teacher_id' => $teacher->id, 'name' => 'حلقة الإتقان اليومية', 'status' => 'active']);
         $this->assertSame(6, DB::table('halaqa_memberships')->where('status', 'active')->count());
-        $this->assertSame(6, DB::table('follow_up_plans')->where('status', 'active')->count());
+        $this->assertSame(7, DB::table('follow_up_plans')->where('status', 'active')->count());
         $this->assertSame(14, DB::table('follow_up_plan_details')->count());
         $this->assertGreaterThanOrEqual(276, DB::table('follow_up_items')->count());
         $this->assertSame(168, DB::table('daily_trackings')->count());
