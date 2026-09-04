@@ -45,6 +45,42 @@ class AuthRegistrationTest extends TestCase
         $this->assertDatabaseCount('personal_access_tokens', 1);
     }
 
+    public function test_student_registration_accepts_only_the_required_student_ui_fields(): void
+    {
+        $payload = [
+            'name' => 'UI Student',
+            'email' => 'ui.student@example.test',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'gender' => 'male',
+            'birth_date' => '2000-01-01',
+            'country' => 'Saudi Arabia',
+            'city' => 'Riyadh',
+            'phone' => '500000003',
+            'phone_zone' => '+966',
+            'attendance_preferences' => [
+                'timezone' => 'Asia/Riyadh',
+                'weekly_slots' => [['day_of_week' => 0, 'from' => '18:00', 'to' => '19:00']],
+            ],
+            'follow_up_plan' => [
+                'frequency' => 'daily',
+                'details' => [['task_type' => 'memorization', 'unit' => 'page', 'amount' => 1]],
+            ],
+            'client_operation_id' => (string) Str::uuid(),
+        ];
+
+        $response = $this->postJson('/api/v1/auth/register/student', $payload);
+
+        $response->assertCreated()
+            ->assertJsonPath('user.role', 'student')
+            ->assertJsonPath('user.email', $payload['email']);
+
+        $userId = $response->json('user.id');
+        $this->assertDatabaseHas('users', ['id' => $userId, 'role' => 'student']);
+        $this->assertDatabaseHas('student_availability_profiles', ['student_id' => $userId, 'timezone' => 'Asia/Riyadh']);
+        $this->assertDatabaseHas('follow_up_plans', ['student_id' => $userId, 'frequency' => 'daily']);
+    }
+
     public function test_repeating_student_client_operation_is_idempotent_for_account_creation(): void
     {
         $payload = $this->studentPayload();
