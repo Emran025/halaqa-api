@@ -38,7 +38,7 @@ php artisan realtime:websocket --host=127.0.0.1 --port=8081
 
 يمر النشر أولًا ببوابة جودة تعيد تثبيت SQLite وتشغيل migrations وseed والاختبارات وPint. بعد نجاحها، يثبت Composer production dependencies ويبني أصول Vite باستخدام `npm ci` و`npm run build`. ثم يرفع محتوى `halaqat_api` فقط، مع استبعاد `.env` و`storage` و`tests` وملفات التطوير والوثائق الداخلية.
 
-بعد الرفع، يربط ملف البيئة الخاص، يجهز مجلدات Laravel، يشغل `optimize:clear` و`storage:link` و`migrate` و`db:seed`، ثم ينشئ config/route/view caches. كما يسجل `php artisan schedule:run` في crontab كل دقيقة حتى يعمل الأمر المجدول `follow-up:process` كل ساعة وفق تعريف Laravel. يفشل النشر إذا غابت متطلبات البيئة أو فشل migration أو فشل إعداد الجدولة، ولا يخفي الأخطاء التشغيلية الحقيقية.
+بعد الرفع، يربط ملف البيئة الخاص، يجهز مجلدات Laravel، يشغل `optimize:clear` و`storage:link` و`migrate`، ثم يفحص عدد المستخدمين. إذا كانت قاعدة البيانات جديدة ولا تحتوي أي مستخدم، يشغل `php artisan db:seed --force` مرة واحدة لتهيئة البيانات الأولية؛ أما إذا كانت تحتوي مستخدمين فيتجاوز الـseeder بالكامل ويحافظ على بيانات الإنتاج. تغييرات البيانات اللاحقة يجب أن تأتي عبر migrations أو أوامر ترحيل مخصصة قابلة للتدقيق، وليس عبر إعادة تشغيل `DatabaseSeeder`. بعد ذلك ينشئ config/route/view caches. كما يسجل `php artisan schedule:run` في crontab كل دقيقة حتى يعمل الأمر المجدول `follow-up:process` كل ساعة وفق تعريف Laravel. يفشل النشر إذا غابت متطلبات البيئة أو فشل migration أو فشل إعداد الجدولة، ولا يخفي الأخطاء التشغيلية الحقيقية.
 
 ## ملاحظات السلامة
 

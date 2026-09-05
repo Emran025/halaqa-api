@@ -186,7 +186,16 @@ jobs:
           chmod -R ug+rwX storage bootstrap/cache
 
           php artisan migrate --force
-          php artisan db:seed --force
+
+          # Demo/reference data is an initial-install bootstrap only. Never run
+          # the full DatabaseSeeder against an existing production database.
+          USER_COUNT="$(php artisan tinker --execute='echo DB::table("users")->count();')"
+          if [ "$USER_COUNT" = "0" ]; then
+            echo 'No users found; running the initial database seed.'
+            php artisan db:seed --force
+          else
+            echo "Existing database detected ($USER_COUNT users); skipping db:seed."
+          fi
           php artisan optimize:clear
           php artisan storage:link --force
           php artisan config:cache
