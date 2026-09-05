@@ -26,7 +26,7 @@ class FollowUpAutomationTest extends TestCase
             'frequency' => 'daily',
             'status' => 'active',
             'timezone' => 'UTC',
-            'starts_on' => Carbon::yesterday()->toDateString(),
+            'starts_on' => '2026-08-25',
             'version' => 1,
         ]);
         $detail = FollowUpPlanDetail::create([
