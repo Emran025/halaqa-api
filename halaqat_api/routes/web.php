@@ -16,7 +16,7 @@ Route::get('/email/verify/{user}/{hash}', function (User $user, string $hash, Em
             'success' => true,
             'message' => 'تم تأكيد عنوان البريد الإلكتروني وربط الحساب به بنجاح.',
         ]);
-    } catch (\Throwable) {
+    } catch (Throwable) {
         return response()->view('auth.email-verified', [
             'success' => false,
             'message' => 'رابط التفعيل غير صالح أو انتهت صلاحيته.',

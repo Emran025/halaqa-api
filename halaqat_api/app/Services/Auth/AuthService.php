@@ -112,7 +112,7 @@ class AuthService
     {
         $user = User::query()->where('email', $email)->first();
 
-        if ($user === null || ! $user->isActive() || ! Hash::check($password, $user->password)) {
+        if (! $user || ! $user->isActive() || ! Hash::check($password, $user->password)) {
             throw new AuthenticationException('The provided credentials are invalid.');
         }
 
