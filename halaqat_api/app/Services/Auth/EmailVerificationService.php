@@ -18,7 +18,7 @@ class EmailVerificationService
         $url = URL::temporarySignedRoute(
             'verification.verify',
             now()->addDay(),
-            ['id' => $user->id, 'hash' => sha1($user->email)],
+            ['user' => $user->id, 'hash' => sha1($user->email)],
         );
 
         $user->notify(new VerifyEmailNotification($url));

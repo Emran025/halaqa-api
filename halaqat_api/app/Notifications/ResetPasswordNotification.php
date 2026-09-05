@@ -2,21 +2,15 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
 
-class ResetPasswordNotification extends Notification
+class ResetPasswordNotification extends ResetPassword
 {
-    use Queueable;
-
-    public function __construct(private readonly string $token) {}
-
-    /** @return array<int, string> */
-    public function via(object $notifiable): array
+    public function __construct(string $token)
     {
-        return ['mail'];
+        parent::__construct($token);
     }
 
     public function toMail(object $notifiable): MailMessage
