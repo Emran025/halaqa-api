@@ -28,9 +28,12 @@ use App\Policies\NotificationPolicy;
 use App\Policies\SessionReportPolicy;
 use App\Policies\SessionTaskPolicy;
 use App\Policies\StudentLearningPolicy;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -62,5 +65,22 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Mistake::class, MistakePolicy::class);
         Gate::policy(SessionTask::class, SessionTaskPolicy::class);
         JsonResource::withoutWrapping();
+
+        ResetPassword::toMailUsing(function (User $notifiable, string $token): MailMessage {
+            $url = URL::route('password.reset.page', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ]);
+
+            return (new MailMessage)
+                ->subject('إعادة تعيين كلمة المرور في حلقة القرآن')
+                ->greeting('مرحباً '.$notifiable->name)
+                ->line('تلقينا طلباً لإعادة تعيين كلمة المرور لحسابك.')
+                ->action('فتح صفحة إعادة التعيين', $url)
+                ->line('يمكنك أيضاً نسخ رمز التحقق التالي إلى تطبيق حلقة القرآن:')
+                ->line($token)
+                ->line('إذا لم تطلب هذا الإجراء، فتجاهل الرسالة بأمان.')
+                ->salutation('مع تحيات فريق حلقة القرآن');
+        });
     }
 }
