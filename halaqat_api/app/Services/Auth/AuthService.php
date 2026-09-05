@@ -21,15 +21,21 @@ use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AuthService
 {
+    public function __construct(private readonly EmailVerificationService $emailVerification)
+    {
+    }
+
     /** @return array{user: User, token: string, expires_at: string} */
     public function registerStudent(array $data): array
     {
         $existing = $this->existingByOperation($data, 'student');
         if ($existing !== null) {
+            $this->sendVerificationIfNeeded($existing);
             return $this->issueToken($existing);
         }
 
@@ -56,6 +62,7 @@ class AuthService
             return $user->fresh(['studentProfile', 'studentProfile.availability', 'studentProfile.followUpPlan.details']);
         });
 
+        $this->sendVerificationIfNeeded($user);
         return $this->issueToken($user);
     }
 
@@ -64,6 +71,7 @@ class AuthService
     {
         $existing = $this->existingByOperation($data, 'teacher');
         if ($existing !== null) {
+            $this->sendVerificationIfNeeded($existing);
             return $this->issueToken($existing);
         }
 
@@ -95,6 +103,7 @@ class AuthService
             return $user->fresh(['teacherProfile', 'teacherProfile.documents']);
         });
 
+        $this->sendVerificationIfNeeded($user);
         return $this->issueToken($user);
     }
 
@@ -105,6 +114,10 @@ class AuthService
 
         if (! $user || ! $user->isActive() || ! Hash::check($password, $user->password)) {
             throw new AuthenticationException('The provided credentials are invalid.');
+        }
+
+        if ($user->email_verified_at === null) {
+            throw new AuthenticationException('حسابك غير مفعّل. تحقق من بريدك الإلكتروني أو اطلب إعادة إرسال رسالة التفعيل.');
         }
 
         $user->forceFill(['last_login_at' => now()])->save();
@@ -155,6 +168,18 @@ class AuthService
             'whatsapp_zone' => $data['whatsapp_zone'] ?? null,
             'status' => 'active',
         ]);
+    }
+
+    private function sendVerificationIfNeeded(User $user): void
+    {
+        try {
+            $this->emailVerification->send($user);
+        } catch (\Throwable $exception) {
+            Log::error('Unable to send account verification email.', [
+                'user_id' => $user->id,
+                'exception' => $exception->getMessage(),
+            ]);
+        }
     }
 
     private function existingByOperation(array $data, string $role): ?User

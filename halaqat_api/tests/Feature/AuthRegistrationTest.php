@@ -4,12 +4,37 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use App\Models\User;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AuthRegistrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Notification::fake();
+    }
+
+    public function test_new_account_requires_email_verification_and_can_request_resend(): void
+    {
+        $response = $this->postJson('/api/v1/auth/register/student', $this->studentPayload())->assertCreated();
+        $userId = $response->json('user.id');
+
+        $this->assertDatabaseHas('users', ['id' => $userId, 'email_verified_at' => null]);
+        Notification::assertSentTo(User::find($userId), \App\Notifications\VerifyEmailNotification::class);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'student@example.test',
+            'password' => 'password123',
+        ])->assertUnauthorized();
+
+        $this->postJson('/api/v1/auth/email/resend-verification', ['email' => 'student@example.test'])
+            ->assertAccepted();
+    }
 
     public function test_student_registration_creates_complete_account_domain_and_explicit_response(): void
     {
@@ -127,6 +152,7 @@ class AuthRegistrationTest extends TestCase
     public function test_login_me_and_logout_use_sanctum_token(): void
     {
         $registration = $this->postJson('/api/v1/auth/register/teacher', $this->teacherPayload())->assertCreated();
+        DB::table('users')->where('email', 'teacher@example.test')->update(['email_verified_at' => now()]);
         $login = $this->postJson('/api/v1/auth/login', [
             'email' => 'teacher@example.test',
             'password' => 'password123',
