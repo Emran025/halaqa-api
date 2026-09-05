@@ -40,7 +40,9 @@ class FollowUpAutomationService
                 foreach ($plans as $plan) {
                     $timezone = $plan->timezone ?: 'UTC';
                     $localNow = $now->copy()->setTimezone($timezone);
-                    $start = $plan->starts_on?->copy()->startOfDay() ?? $localNow->copy()->startOfDay();
+                    $start = $plan->starts_on !== null
+                        ? Carbon::parse($plan->starts_on->toDateString(), $timezone)->startOfDay()
+                        : $localNow->copy()->startOfDay();
                     $candidate = $start->greaterThan($localNow->startOfDay()) ? $start : $localNow->copy()->startOfDay();
                     $interval = match ($plan->frequency) {
                         'daily' => 1,
@@ -49,22 +51,36 @@ class FollowUpAutomationService
                         'thriceAWeek' => 2,
                         default => 7,
                     };
-                    $scheduled = $candidate->setTime(9, 0);
-                    if ($scheduled->lessThanOrEqualTo($localNow)) {
-                        $scheduled->addDays($interval);
-                    }
-                    if ($plan->ends_on !== null && $scheduled->toDateString() > $plan->ends_on->toDateString()) {
-                        continue;
-                    }
 
                     foreach ($plan->details as $detail) {
-                        $exists = FollowUpItem::query()
+                        $lastScheduledAt = FollowUpItem::query()
                             ->where('plan_id', $plan->id)
                             ->where('plan_detail_id', $detail->id)
-                            ->whereIn('state', ['upcoming', 'due', 'in_progress'])
-                            ->where('scheduled_for', '>=', $now->copy()->subDay())
+                            ->latest('scheduled_for')
+                            ->value('scheduled_for');
+                        if ($lastScheduledAt !== null) {
+                            $lastLocalDate = Carbon::parse($lastScheduledAt, 'UTC')->setTimezone($timezone)->startOfDay();
+                            if ($lastLocalDate->lessThanOrEqualTo($candidate)) {
+                                $nextEligibleDate = $lastLocalDate->copy()->addDays($interval);
+                                if ($nextEligibleDate->greaterThan($candidate)) {
+                                    continue;
+                                }
+                            }
+                        }
+
+                        $scheduled = $candidate->copy()->setTime(9, 0);
+                        if ($plan->ends_on !== null && $scheduled->toDateString() > $plan->ends_on->toDateString()) {
+                            continue;
+                        }
+
+                        $scheduledStartUtc = $scheduled->copy()->startOfDay()->setTimezone('UTC');
+                        $scheduledEndUtc = $scheduled->copy()->endOfDay()->setTimezone('UTC');
+                        $existsOnScheduledDay = FollowUpItem::query()
+                            ->where('plan_id', $plan->id)
+                            ->where('plan_detail_id', $detail->id)
+                            ->whereBetween('scheduled_for', [$scheduledStartUtc, $scheduledEndUtc])
                             ->exists();
-                        if ($exists) {
+                        if ($existsOnScheduledDay) {
                             continue;
                         }
 

@@ -42,6 +42,7 @@ class FollowUpAutomationTest extends TestCase
 
         $this->assertSame(1, $service->process($now));
         $this->assertSame(1, FollowUpItem::query()->where('plan_detail_id', $detail->id)->count());
+        $this->assertSame('2026-08-26', Carbon::parse(FollowUpItem::query()->where('plan_detail_id', $detail->id)->value('scheduled_for'))->toDateString());
         $this->assertSame(0, $service->process($now));
         $this->assertSame(1, FollowUpItem::query()->where('plan_detail_id', $detail->id)->count());
     }
