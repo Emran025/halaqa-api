@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use Illuminate\Auth\Notifications\ResetPassword;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\URL;
 
 class ResetPasswordNotification extends ResetPassword
@@ -13,7 +12,7 @@ class ResetPasswordNotification extends ResetPassword
         parent::__construct($token);
     }
 
-    public function toMail(object $notifiable): MailMessage
+    public function toMail($notifiable)
     {
         $url = URL::route('password.reset.page', [
             'token' => $this->token,
