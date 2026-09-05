@@ -26,9 +26,7 @@ use Illuminate\Support\Str;
 
 class AuthService
 {
-    public function __construct(private readonly EmailVerificationService $emailVerification)
-    {
-    }
+    public function __construct(private readonly EmailVerificationService $emailVerification) {}
 
     /** @return array{user: User, token: string, expires_at: string} */
     public function registerStudent(array $data): array
@@ -36,6 +34,7 @@ class AuthService
         $existing = $this->existingByOperation($data, 'student');
         if ($existing !== null) {
             $this->sendVerificationIfNeeded($existing);
+
             return $this->issueToken($existing);
         }
 
@@ -63,6 +62,7 @@ class AuthService
         });
 
         $this->sendVerificationIfNeeded($user);
+
         return $this->issueToken($user);
     }
 
@@ -72,6 +72,7 @@ class AuthService
         $existing = $this->existingByOperation($data, 'teacher');
         if ($existing !== null) {
             $this->sendVerificationIfNeeded($existing);
+
             return $this->issueToken($existing);
         }
 
@@ -104,6 +105,7 @@ class AuthService
         });
 
         $this->sendVerificationIfNeeded($user);
+
         return $this->issueToken($user);
     }
 
