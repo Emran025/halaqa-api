@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use App\Notifications\VerifyEmailNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
-use App\Models\User;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -25,7 +26,7 @@ class AuthRegistrationTest extends TestCase
         $userId = $response->json('user.id');
 
         $this->assertDatabaseHas('users', ['id' => $userId, 'email_verified_at' => null]);
-        Notification::assertSentTo(User::find($userId), \App\Notifications\VerifyEmailNotification::class);
+        Notification::assertSentTo(User::find($userId), VerifyEmailNotification::class);
 
         $this->postJson('/api/v1/auth/login', [
             'email' => 'student@example.test',

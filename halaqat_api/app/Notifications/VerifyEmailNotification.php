@@ -10,9 +10,7 @@ class VerifyEmailNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(private readonly string $verificationUrl)
-    {
-    }
+    public function __construct(private readonly string $verificationUrl) {}
 
     /** @return array<int, string> */
     public function via(object $notifiable): array

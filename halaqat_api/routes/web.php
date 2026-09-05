@@ -1,21 +1,23 @@
 <?php
 
 use App\Models\User;
-use App\Services\Auth\PasswordService;
 use App\Services\Auth\EmailVerificationService;
+use App\Services\Auth\PasswordService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Throwable;
 
 Route::view('/', 'welcome');
 
 Route::get('/email/verify/{user}/{hash}', function (User $user, string $hash, EmailVerificationService $service) {
     try {
         $service->verify($user, $hash);
+
         return response()->view('auth.email-verified', [
             'success' => true,
             'message' => 'تم تأكيد عنوان البريد الإلكتروني وربط الحساب به بنجاح.',
         ]);
-    } catch (\Throwable) {
+    } catch (Throwable) {
         return response()->view('auth.email-verified', [
             'success' => false,
             'message' => 'رابط التفعيل غير صالح أو انتهت صلاحيته.',
@@ -37,6 +39,7 @@ Route::post('/password/reset', function (Request $request, PasswordService $serv
         'password' => ['required', 'string', 'min:8', 'confirmed'],
     ]);
     $service->reset($validated['email'], $validated['token'], $validated['password']);
+
     return view('auth.email-verified', [
         'success' => true,
         'message' => 'تم تغيير كلمة المرور بنجاح. يمكنك الآن فتح التطبيق وتسجيل الدخول.',
