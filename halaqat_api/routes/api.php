@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\Halaqas\SetHalaqaStatusController;
 use App\Http\Controllers\Api\V1\Halaqas\UpdateHalaqaController;
 use App\Http\Controllers\Api\V1\Memberships\AssignStudentToHalaqaController;
 use App\Http\Controllers\Api\V1\Memberships\ListHalaqaMembershipsController;
+use App\Http\Controllers\Api\V1\Memberships\ListHalaqaStudentSummaryController;
 use App\Http\Controllers\Api\V1\Memberships\ListHalaqaStudentsController;
 use App\Http\Controllers\Api\V1\Memberships\RemoveStudentFromHalaqaController;
 use App\Http\Controllers\Api\V1\Memberships\UpdateMembershipController;
@@ -139,6 +140,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('halaqas/{halaqa}/activate', [SetHalaqaStatusController::class, 'activate']);
         Route::post('halaqas/{halaqa}/deactivate', [SetHalaqaStatusController::class, 'deactivate']);
         Route::get('halaqas/{halaqa}/students', ListHalaqaStudentsController::class);
+        Route::get('halaqas/{halaqa}/students-summary', ListHalaqaStudentSummaryController::class);
         Route::post('halaqas/{halaqa}/students', AssignStudentToHalaqaController::class);
         Route::get('halaqas/{halaqa}/memberships', ListHalaqaMembershipsController::class);
         Route::patch('halaqas/{halaqa}/memberships/{membership}', UpdateMembershipController::class);
